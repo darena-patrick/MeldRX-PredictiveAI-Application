@@ -8,15 +8,15 @@ import { useRouter } from "next/navigation";
 const userManager = new UserManager(config);
 
 export default function Launch() {
-  const [error, setError] = useState<string | null>(null);
-  const [patientData, setPatientData] = useState<any>(null);
+  const [error, setError] = useState(null);
+  const [patientData, setPatientData] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
     async function authenticateAndFetchData() {
       try {
         const params = new URLSearchParams(window.location.search);
-        const extraQueryParams: Record<string, string> = {};
+        const extraQueryParams = {};
 
         params.forEach((value, key) => {
           extraQueryParams[key === "iss" ? "aud" : key] = value;
@@ -69,7 +69,7 @@ export default function Launch() {
         console.log("FHIR Patient Data:", data);
       } catch (err) {
         console.error("Error in Launch process:", err);
-        setError((err as Error).message);
+        setError(err.message);
       }
     }
 
