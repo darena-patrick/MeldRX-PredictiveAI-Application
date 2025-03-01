@@ -161,9 +161,9 @@ export default function Dashboard() {
 
         const parsedResponse = JSON.parse(cleanedResponse);
 
-        setRiskScore(parsedResponse.riskScore);
+        setRiskScore(parsedResponse.riskScore || []);
         setConditionTrends(parsedResponse.conditionTrends);
-        setRecommendations(parsedResponse.recommendations);
+        setRecommendations(parsedResponse.recommendations || []);
         setNormalResponse(parsedResponse.normalResponse);
       }
     } catch (error) {
