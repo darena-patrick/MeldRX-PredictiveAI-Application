@@ -1,0 +1,44 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+predictive-ai-service/node_modules
+predictive-ai-service/.pnp
+predictive-ai-service/.pnp.*
+predictive-ai-service/.yarn/*
+predictive-ai-service/!.yarn/patches
+predictive-ai-service/!.yarn/plugins
+predictive-ai-service/!.yarn/releases
+predictive-ai-service/!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+predictive-ai-service/.next/
+/out/
+
+# production
+predictive-ai-service/build
+
+# misc
+predictive-ai-service/.DS_Store
+predictive-ai-service/*.pem
+
+# debug
+predictive-ai-service/npm-debug.log*
+predictive-ai-service/yarn-debug.log*
+predictive-ai-service/yarn-error.log*
+predictive-ai-service/.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+predictive-ai-service/.env*
+
+# vercel
+predictive-ai-service/.vercel
+
+# typescript
+predictive-ai-service/*.tsbuildinfo
+predictive-ai-service/next-env.d.ts
+
+Sample_Fhir_Bundles
+AliceNewman.xml
