@@ -37,7 +37,7 @@ export default function Launch() {
         }
 
         // Check if user is already authenticated
-        let user = await userManager.getUser();
+        const user = await userManager.getUser();
 
         if (!user || !user.access_token) {
           console.warn("User not authenticated, redirecting...");
