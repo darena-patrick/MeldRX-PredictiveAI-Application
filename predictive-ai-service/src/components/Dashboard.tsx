@@ -194,7 +194,6 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      <h2 className="text-2xl font-bold">Welcome, {user?.name || "User"}</h2>
       {loading ? (
         <p>Loading conditions...</p>
       ) : error ? (

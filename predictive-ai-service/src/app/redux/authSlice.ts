@@ -22,7 +22,7 @@ const authSlice = createSlice({
     setToken: (state, action: PayloadAction<string>) => {
       state.token = action.payload;
     },
-    setPatientId: (state, action: PayloadAction<string | null>) => {
+    setPatientId: (state, action: PayloadAction<any>) => {
       state.patientId = action.payload;
     },
     logout: (state) => {

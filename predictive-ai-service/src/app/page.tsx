@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { setUser, setToken, setPatientId } from "./redux/authSlice"; // Adjust path to redux slice
 import { handleCallback, handleLaunch } from "../utils/auth"; // Assuming these functions are implemented
 import Dashboard from "@/components/Dashboard";
+import axios from "axios";
 
 export default function Home() {
   const dispatch = useDispatch();
@@ -12,6 +13,7 @@ export default function Home() {
   const token = useSelector((state: any) => state.auth.token);
   const patientId = useSelector((state: any) => state.auth.patientId);
   const [loading, setLoading] = useState(true); // State to handle loading state
+  const [patientName, setPatientName] = useState<string | null>(null);
 
   useEffect(() => {
     console.log("Redux User:", user);
@@ -51,20 +53,59 @@ export default function Home() {
     authenticateUser();
   }, [dispatch]);
 
+  useEffect(() => {
+    if (patientId && token) {
+      const fetchPatientName = async () => {
+        try {
+          const response = await axios.get(
+            `https://app.meldrx.com/api/fhir/23cd739c-3141-4d1a-81a3-697b766ccb56/Patient/${patientId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          const patientName = response.data.name[0];
+          const fullName = `${patientName.given.join(" ")} ${
+            patientName.family
+          }`;
+          setPatientName(fullName); // Set patient name state
+        } catch (error) {
+          console.error("Error fetching patient name:", error);
+        }
+      };
+
+      fetchPatientName();
+    }
+  }, [patientId, token]);
+
   return (
-    <main>
-      <h1>Welcome to the Predictive AI Healthcare App</h1>
+    <main className="min-h-screen bg-base-100 p-6">
+      <header className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-semibold text-blue-700">
+          Welcome to the Predictive AI Healthcare App
+        </h1>
+      </header>
+
       {loading ? (
-        <p>Authenticating...</p>
+        <div className="flex justify-center items-center">
+          <div className="loader loader-spinner"></div>
+          <p className="ml-4 text-lg">Authenticating...</p>
+        </div>
       ) : user && token ? (
         <>
-          <p>Authenticated as {user.name}</p>
-          {patientId && <p>Patient ID: {patientId}</p>}{" "}
-          {/* Display Patient ID */}
+          {patientName ? (
+            <h2 className="text-4xl font-bold text-center text-indigo-600 mt-10">
+              {patientName}'s Insights
+            </h2>
+          ) : (
+            <p className="text-center text-xl">Loading Patient Name...</p>
+          )}
+
           <Dashboard />
         </>
       ) : (
-        <p>Not authenticated</p>
+        <p className="text-center text-xl text-red-500">Not authenticated</p>
       )}
     </main>
   );
