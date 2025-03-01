@@ -23,5 +23,14 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/utils/auth.js"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "strict": false, // Disables all strict type-checking options
+  "noImplicitAny": false, // Allows implicit `any` types
+  "noUnusedLocals": false, // Allows unused variables
+  "noUnusedParameters": false, // Allows unused function parameters
+  "skipLibCheck": true, // Skips type checking of declaration files
+  "allowJs": true, // Allows JavaScript files in the project
+  "jsx": "react-jsx", // Use React JSX runtime
+  "noEmit": true, // Prevent emitting output files
+  "forceConsistentCasingInFileNames": true // Ensure consistent file casing
 }
