@@ -80,7 +80,7 @@ app.post('/cds-services/:id', (req, res) => {
                     links: [
                         {
                             label: 'View in App',
-                            url: 'http://localhost:3000/launch',
+                            url: 'https://meld-rx-predictive-ai-application.vercel.app/launch',
                             type: 'smart'
                         }
                     ]
