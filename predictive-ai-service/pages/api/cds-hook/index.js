@@ -39,14 +39,14 @@ app.post('/cds-services/:id', (req, res) => {
         const conditions = req.body.prefetch.conditions || [];
         console.log('conditions', conditions);
         // console.log('conditions', conditions);
-        const observationsBundle = req.body.prefetch.observations || { entry: [] };
-        const observations = observationsBundle.entry.map(entry => entry.resource);
-        const cholesterolObs = observations.find(obs => 
-            obs.code?.text?.toLowerCase().includes('cholesterol')
-          );
-        const bloodPressureObs = observations.find(obs => 
-        obs.code?.text?.toLowerCase().includes('blood pressure')
-        );
+        // const observationsBundle = req.body.prefetch.observations || { entry: [] };
+        // const observations = observationsBundle.entry.map(entry => entry.resource);
+        // const cholesterolObs = observations.find(obs => 
+        //     obs.code?.text?.toLowerCase().includes('cholesterol')
+        //   );
+        // const bloodPressureObs = observations.find(obs => 
+        // obs.code?.text?.toLowerCase().includes('blood pressure')
+        // );
 
         // console.log('observations', observations);
         // const medications = req.body.prefetch.medications || [];
@@ -60,10 +60,10 @@ app.post('/cds-services/:id', (req, res) => {
         //  console.log(bloodPressure);
         // conditions if high blood preassure example. Show warning can or not, etc. Way to classify this.
 
-        const cholesterolValue = cholesterolObs?.valueQuantity?.value || 'N/A';
-        console.log('cholesterolValue', cholesterolValue);
-        const bloodPressureValue = bloodPressureObs?.valueQuantity?.value || 'N/A';
-        console.log('bloodPressureValue', bloodPressureValue);
+        // const cholesterolValue = cholesterolObs?.valueQuantity?.value || 'N/A';
+        // console.log('cholesterolValue', cholesterolValue);
+        // const bloodPressureValue = bloodPressureObs?.valueQuantity?.value || 'N/A';
+        // console.log('bloodPressureValue', bloodPressureValue);
 
         
         const name = patient.name[0].given[0] + ' ' + patient.name[0].family
@@ -72,7 +72,7 @@ app.post('/cds-services/:id', (req, res) => {
             cards: [
                 {
                     summary: `AI Insights for ${name}`,
-                    detail: `Health Data: BP: ${bloodPressureValue}, Cholesterol: ${cholesterolValue}`,
+                    // detail: `Health Data: BP: ${bloodPressureValue}, Cholesterol: ${cholesterolValue}`,
                     indicator: 'info',
                     source: {
                         label: 'AI Health Insights'
@@ -90,4 +90,9 @@ app.post('/cds-services/:id', (req, res) => {
     }
 })
 
-app.listen(4433, () => console.log('started!'))
+// app.listen(4433, () => console.log('started!')) // for local testing only
+
+// for vercel
+module.exports = (req, res) => {
+    app(req, res); // Pass request and response to express app
+};
