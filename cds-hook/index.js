@@ -1,5 +1,4 @@
 const express = require('express');
-const { createServer } = require('@vercel/node');
 
 const app = express()
 
@@ -94,4 +93,6 @@ app.post('/cds-services/:id', (req, res) => {
 // app.listen(4433, () => console.log('started!')) // for local testing only
 
 // for vercel
-module.exports = createServer(app);
+export default function handler(req, res) {
+    return app(req, res);
+}
