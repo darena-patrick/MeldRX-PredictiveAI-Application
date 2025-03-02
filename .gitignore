@@ -30,8 +30,6 @@ predictive-ai-service/yarn-debug.log*
 predictive-ai-service/yarn-error.log*
 predictive-ai-service/.pnpm-debug.log*
 
-predictive-ai-service/pages/api/cds-hook/node_modules
-
 # env files (can opt-in for committing if needed)
 predictive-ai-service/.env*
 
