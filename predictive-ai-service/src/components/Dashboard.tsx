@@ -275,7 +275,7 @@ export default function Dashboard() {
 
       const aiResponse = await fetchGeminiResponse(prompt);
 
-      console.log("Raw AI response (Condition):", aiResponse);
+      // console.log("Raw AI response (Condition):", aiResponse);
       setConditionInsights(aiResponse);
 
       return aiResponse;
@@ -299,7 +299,7 @@ export default function Dashboard() {
 
       const aiResponse = await fetchGeminiResponse(prompt);
 
-      console.log("Raw AI response (Observation):", aiResponse);
+      // console.log("Raw AI response (Observation):", aiResponse);
       setObservationInsights(aiResponse);
 
       // Just return the raw AI response
@@ -311,8 +311,8 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    console.log("con", conditionInsights);
-    console.log("ob", observationInsights);
+    // console.log("con", conditionInsights);
+    // console.log("ob", observationInsights);
     if (!token || !patientId || !conditionInsights || !observationInsights)
       return;
 
@@ -349,7 +349,7 @@ export default function Dashboard() {
 
       const aiResponse = await fetchGeminiResponse(prompt);
 
-      console.log("Final AI response (Combined):", aiResponse);
+      // console.log("Final AI response (Combined):", aiResponse);
 
       if (aiResponse) {
         const cleanedResponse = aiResponse.replace(/```json|```/g, "").trim();

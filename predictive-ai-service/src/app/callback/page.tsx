@@ -18,7 +18,7 @@ export default function Callback() {
 
         if (userData && userData.user && userData.token) {
           // Ensure userData is correctly set before dispatching
-          console.log("Dispatching authenticated user and token:", userData);
+          // console.log("Dispatching authenticated user and token:", userData);
 
           // Dispatch user and token to redux store
           dispatch(setUser(userData.user)); // Pass serialized user data
@@ -26,7 +26,7 @@ export default function Callback() {
           dispatch(setPatientId(userData.patientId || null));
 
           // Optionally, log user info
-          console.log("User authenticated:", userData.user);
+          // console.log("User authenticated:", userData.user);
 
           // Redirect to home or other page after successful authentication
           router.push("/"); // Redirect to the home page or any other page you want

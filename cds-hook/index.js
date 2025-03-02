@@ -40,7 +40,7 @@ app.post('/cds-services/:id', (req, res) => {
 
         const patient = req.body.prefetch.patient;
         const conditions = req.body.prefetch.conditions || [];
-        console.log('conditions', conditions);
+        // console.log('conditions', conditions);
         // console.log('conditions', conditions);
         // const observationsBundle = req.body.prefetch.observations || { entry: [] };
         // const observations = observationsBundle.entry.map(entry => entry.resource);

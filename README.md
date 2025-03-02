@@ -1,48 +1,140 @@
-References:
+# Predictive AI Healthcare Insighter
 
-- https://github.com/authts/oidc-client-ts
-- npm install @reduxjs/toolkit react-redux
-- axios
-- npm install recharts
-- npm install -D tailwindcss postcss autoprefixer
-- npx tailwindcss init -p
-- npm install daisyui
-- npm install @google/generative-ai
-- npm i @react-pdf/renderer
+**Demo Video:** [Live Demo](https://google.com)  
+**Privacy Policy:** [View Here](https://meld-rx-predictive-ai-application.vercel.app/privacy-policy)  
+**Terms of Service:** [View Here](https://meld-rx-predictive-ai-application.vercel.app/terms-of-service)
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+⚠ **Note**: The hosted URLs may become unavailable after the hackathon results are announced.
 
-## Getting Started
+---
 
-First, run the development server:
+## 📌 Overview
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+**What is this app?**  
+Predictive AI Healthcare Insighter is an AI-powered decision-support tool integrated with Electronic Health Records (EHR) via MeldRx.
+
+**What does it do?**
+
+- Provides **real-time patient risk predictions**.
+- Suggests **AI-powered recommended actions**.
+- Offers **preventive care recommendations**.
+- Displays **interactive visual insights** about patient history and trends.
+
+---
+
+## 🔍 Features
+
+✔️ **Secure Authentication** – Uses OAuth 2.0 authentication via MeldRx.  
+✔️ **AI-Driven Insights** – Uses Gemini AI for predictive analytics.  
+✔️ **Risk Score Calculation** – Determines the likelihood of disease progression.  
+✔️ **Treatment Recommendations** – Provides AI-suggested treatments or preventive care actions.  
+✔️ **Data Visualization** – Graphs, charts, and trends displayed via Recharts.  
+✔️ **CDS Hook Integration** – Embeds within EHR, showing AI insights when patient data is accessed.  
+✔️ **PDF Reports** – Generates downloadable AI analysis reports for reference.
+
+---
+
+## 🏗️ Technologies Used
+
+This project is built with:
+
+| Technology                                                                | Purpose                        |
+| ------------------------------------------------------------------------- | ------------------------------ |
+| [oidc-client-ts](https://github.com/authts/oidc-client-ts)                | Authentication & Authorization |
+| [Redux Toolkit](https://redux-toolkit.js.org/)                            | Global State Management        |
+| [React Redux](https://react-redux.js.org/)                                | State Management               |
+| [Axios](https://axios-http.com/)                                          | API Requests                   |
+| [Recharts](https://recharts.org/)                                         | Data Visualization             |
+| [TailwindCSS](https://tailwindcss.com/) & [DaisyUI](https://daisyui.com/) | UI Styling                     |
+| [Google Generative AI](https://ai.google.dev/)                            | AI-driven Predictions          |
+| [React PDF Renderer](https://react-pdf.org/)                              | PDF Generation                 |
+
+---
+
+## 🚀 Installation & Setup
+
+Follow these steps to set up the project locally.
+
+### 1️⃣ Clone the Repository
+
+```sh
+git clone https://github.com/JonathanSolvesProblems/MeldRX-PredictiveAI-Application.git
+cd predictive-ai-service
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2️⃣ Create Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create a `.env.local` file in the root directory and add the following:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```sh
+NEXT_PUBLIC_AUTHORITY=https://app.meldrx.com
+NEXT_PUBLIC_CLIENT_ID=<meldrx client id>
+NEXT_PUBLIC_CALLBACK_URL=http://localhost:3000/callback
+GEMINI_API_KEY=<Google Gemini API Key>
+NEXT_PUBLIC_APP_ID=<meldrx bundle id>
+```
 
-## Learn More
+### 3️⃣ MeldRx App Setup
 
-To learn more about Next.js, take a look at the following resources:
+To integrate with **MeldRx**, follow these steps:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Create an app** on [MeldRx](https://app.meldrx.com/).
+2. **Set the required OAuth Scopes** for authentication:
+   - `profile`
+   - `openid`
+   - `launch`
+   - `launch/patient`
+   - `patient/*.*`
+   - `patient/*.read`
+3. **Configure the Redirect URL:**
+   - For the deployed app:
+     ```sh
+     https://meld-rx-predictive-ai-application.vercel.app/callback
+     ```
+   - For local development:
+     ```sh
+     http://localhost:3000/callback
+     ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4️⃣ CDS Hook Setup
 
-## Deploy on Vercel
+To enable **Clinical Decision Support (CDS) Hooks**, follow these steps:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Navigate to your **MeldRx App Dashboard**.
+2. Locate the **CDS Hooks Configuration** section.
+3. Set the **CDS Hook Service URL**:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   - For the deployed app:
+     ```sh
+     https://meld-rx-predictive-ai-application.vercel.app/api/cds-services/0001
+     ```
+   - For local development:
+
+     ```sh
+     http://localhost:3000/api/cds-services/0001
+     ```
+
+     3.1. Ensure to host it with ngrok generated URL and use that as the URL to get it to work without hosting it: [ngrok](https://ngrok.com/)
+
+4. Save the configuration and ensure your **CDS Hook is active**.
+5. The CDS Hook will trigger when a patient record is opened, providing a link to the application for further analysis.
+
+### 5️⃣ Import Sample Patients
+
+To test the application, you can import sample patient data into MeldRx:
+
+1. **Go to the MeldRx Dashboard** and navigate to the **Patients** section.
+2. Look for the option to **Import Sample Patients** and follow the on-screen instructions.
+3. Once imported, open a sample patient record within the **EHR system**.
+4. The CDS Hook should trigger automatically, displaying a link to the **Predictive AI Healthcare Insighter** app.
+5. Click the link to access AI-generated insights, including **risk scores, recommended actions, and data visualizations**.
+
+✅ _At this point, the app should be fully functional within the EHR system, displaying AI-driven insights on patient data!_ 🚀
+
+## 🌍 Online Deployment
+
+The application is hosted on Vercel at:
+
+👉 [MeldRx Predictive AI App](https://meld-rx-predictive-ai-application.vercel.app/)
+
+⚠ **Note**: The hosted URL must be navigated through the MeldRx platform in order to initiate the authentication step to access the application.

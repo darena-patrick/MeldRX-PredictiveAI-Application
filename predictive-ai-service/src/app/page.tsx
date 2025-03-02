@@ -16,31 +16,31 @@ export default function Home() {
   const [patientName, setPatientName] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("Redux User:", user);
-    console.log("Redux Token:", token);
-    console.log("Redux Patient ID:", patientId);
+    // console.log("Redux User:", user);
+    // console.log("Redux Token:", token);
+    // console.log("Redux Patient ID:", patientId);
   }, [user, token, patientId]);
 
   useEffect(() => {
     const authenticateUser = async () => {
       try {
         if (window.location.pathname === "/callback") {
-          console.log("Handling authentication callback...");
+          // console.log("Handling authentication callback...");
           const userData = await handleCallback();
           if (userData && userData.user && userData.token) {
             dispatch(setUser(userData.user));
             dispatch(setToken(userData.token));
             dispatch(setPatientId(userData.patientId || null)); // Store patientId
-            console.log("User authenticated:", userData.user);
+            // console.log("User authenticated:", userData.user);
           }
         } else if (window.location.pathname === "/launch") {
-          console.log("Handling SMART launch...");
+          // console.log("Handling SMART launch...");
           const userData = await handleLaunch();
           if (userData && userData.user && userData.token) {
             dispatch(setUser(userData.user));
             dispatch(setToken(userData.token));
             dispatch(setPatientId(userData.patientId || null)); // Store patientId
-            console.log("Launch successful:", userData.user);
+            // console.log("Launch successful:", userData.user);
           }
         }
       } catch (error) {

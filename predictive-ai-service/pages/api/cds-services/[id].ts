@@ -27,7 +27,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
             },
             links: [
               {
-                label: "View in App",
+                label: "Get AI Insights",
                 url: "https://meld-rx-predictive-ai-application.vercel.app/launch",
                 type: "smart",
               },

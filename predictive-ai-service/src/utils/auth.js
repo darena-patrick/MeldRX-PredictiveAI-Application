@@ -16,7 +16,7 @@ export const handleLaunch = async () => {
   if (typeof window === "undefined") return { user: null, token: "", patientId: undefined };
 
   if (window.location.pathname === '/launch') {
-    console.log('Launching authentication...', window.location);
+    // console.log('Launching authentication...', window.location);
 
     const extraQueryParams = {};
     const params = new URLSearchParams(window.location.search);
@@ -49,12 +49,12 @@ export const handleCallback = async () => {
   if (typeof window === "undefined") return { user: null, token: "", patientId: undefined };
 
   if (window.location.pathname === "/callback") {
-    console.log("Handling callback...", window.location);
+    // console.log("Handling callback...", window.location);
 
     try {
       // Process the OIDC response directly using oidcClient
       const signinResponse = await oidcClient.processSigninResponse(window.location.href);
-      console.log("Processed OIDC Sign-in Response:", signinResponse);
+      // console.log("Processed OIDC Sign-in Response:", signinResponse);
 
       // Extract user and profile from the signinResponse
       const user = {
@@ -65,7 +65,7 @@ export const handleCallback = async () => {
 
       // Extract patientId from the response or URL query params
       const patientId = signinResponse.patient || new URLSearchParams(window.location.search).get("patient");
-      console.log('patientId', patientId);
+      // console.log('patientId', patientId);
 
       // Return the user data and patientId
       return {

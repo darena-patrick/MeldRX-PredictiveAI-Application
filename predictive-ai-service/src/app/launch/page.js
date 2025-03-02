@@ -22,16 +22,16 @@ export default function Launch() {
           extraQueryParams[key === "iss" ? "aud" : key] = value;
         });
 
-        console.log("Extracted Query Params:", extraQueryParams);
+        // console.log("Extracted Query Params:", extraQueryParams);
 
         // Check for authentication response in URL (avoids infinite redirect loop)
         if (
           window.location.search.includes("code=") ||
           window.location.search.includes("error=")
         ) {
-          console.log(
-            "Detected authentication response, redirecting to /callback..."
-          );
+          // console.log(
+          //   "Detected authentication response, redirecting to /callback..."
+          // );
           router.push("/callback");
           return;
         }
@@ -48,7 +48,7 @@ export default function Launch() {
           return;
         }
 
-        console.log("Authenticated User:", user);
+        // console.log("Authenticated User:", user);
 
         // Fetch FHIR Patient Data
         const response = await fetch(
@@ -66,7 +66,7 @@ export default function Launch() {
 
         const data = await response.json();
         setPatientData(data);
-        console.log("FHIR Patient Data:", data);
+        // console.log("FHIR Patient Data:", data);
       } catch (err) {
         console.error("Error in Launch process:", err);
         setError(err.message);
