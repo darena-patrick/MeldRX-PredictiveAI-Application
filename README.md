@@ -1,3 +1,15 @@
+References:
+
+- https://github.com/authts/oidc-client-ts
+- npm install @reduxjs/toolkit react-redux
+- axios
+- npm install recharts
+- npm install -D tailwindcss postcss autoprefixer
+- npx tailwindcss init -p
+- npm install daisyui
+- npm install @google/generative-ai
+- npm i @react-pdf/renderer
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
