@@ -414,6 +414,20 @@ export default function Dashboard() {
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#A28EFF"];
 
+  const CustomizedTick = (props: any) => {
+    const { x, y, payload } = props;
+    return (
+      <text
+        x={x}
+        y={y}
+        textAnchor="middle"
+        transform={`rotate(-45 ${x} ${y})`} // Apply rotation here
+      >
+        {payload.value}
+      </text>
+    );
+  };
+
   return (
     <div className="p-6 space-y-6">
       {loading ? (
@@ -453,9 +467,14 @@ export default function Dashboard() {
           <div className="card bg-base-200 p-4 shadow-lg">
             <h3 className="text-lg font-bold">Most Common Conditions</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={barData} layout="vertical">
+              <BarChart data={barData} layout="vertical" barCategoryGap={10}>
                 <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" width={150} />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  width={150}
+                  tick={<CustomizedTick />} // Custom tick renderer
+                />
                 <Tooltip />
                 <Legend />
                 <Bar dataKey="count" fill="#0088FE" />
