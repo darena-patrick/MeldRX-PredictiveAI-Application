@@ -168,7 +168,6 @@ export default function Dashboard() {
   const [accuracy, setAccuracy] = useState<number>();
   const [accuracyExplanation, setAccuracyExplanation] = useState<string>("");
   const [riskScoreExplanation, setRiskScoreExplanation] = useState<string>("");
-  const [trackAllConditions, setTrackAllConditions] = useState<any>();
 
   useEffect(() => {
     if (!token || !patientId) return;
@@ -209,9 +208,7 @@ export default function Dashboard() {
             )?.url || null;
         }
 
-        // Dispatch the conditions to the store, ensuring only 6 are stored
-        dispatch(setConditions(allConditions.slice(0, 6)));
-        setTrackAllConditions(allConditions);
+        dispatch(setConditions(allConditions));
         setLoading(false);
 
         // Pass the first 6 conditions to the AI function
@@ -396,14 +393,11 @@ export default function Dashboard() {
     }
   };
 
-  const clinicalStatusCounts = trackAllConditions.reduce(
-    (acc: any, condition: any) => {
-      const status = condition.clinicalStatus?.coding?.[0]?.code || "unknown";
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    },
-    {}
-  );
+  const clinicalStatusCounts = conditions.reduce((acc: any, condition: any) => {
+    const status = condition.clinicalStatus?.coding?.[0]?.code || "unknown";
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
 
   const pieData = Object.entries(clinicalStatusCounts).map(([key, value]) => ({
     name: key,
@@ -426,7 +420,7 @@ export default function Dashboard() {
         <p>Loading conditions...</p>
       ) : error ? (
         <p className="text-red-500">Error: {error}</p>
-      ) : trackAllConditions.length > 0 ? (
+      ) : conditions.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Clinical Status Distribution */}
           <div className="card bg-base-200 p-4 shadow-lg">
