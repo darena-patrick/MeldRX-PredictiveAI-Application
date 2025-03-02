@@ -59,18 +59,22 @@ const styles = StyleSheet.create({
 
 const AIResponsePDF = ({
   riskScore,
+  riskScoreExplanation,
   recommendedTreatments,
   conditionTrends,
   preventiveMeasures,
   normalResponse,
   accuracy,
+  accuracyExplanation,
 }: {
   riskScore: number;
+  riskScoreExplanation: string;
   recommendedTreatments: string[];
   conditionTrends: string[];
   preventiveMeasures: string[];
   normalResponse: string;
   accuracy: number;
+  accuracyExplanation: string;
 }) => (
   <Document>
     <Page style={styles.page}>
@@ -78,11 +82,13 @@ const AIResponsePDF = ({
 
       {/* Risk Score */}
       <Text style={styles.subheader}>Risk Score: {riskScore}%</Text>
+      <Text style={styles.text}>{riskScoreExplanation}</Text>
 
       {/* Overall AI Accuracy */}
       <Text style={styles.subheader}>
         Overall AI Accuracy: {(accuracy * 100).toFixed(2)}%
       </Text>
+      <Text style={styles.text}>{accuracyExplanation}</Text>
 
       {/* Normal Response */}
       <Text style={styles.subheader}>Quick Summary:</Text>
@@ -129,6 +135,12 @@ const AIResponsePDF = ({
           </View>
         </View>
       )}
+
+      {/* Friendly Message */}
+      <Text style={styles.text}>
+        Predictions should be interpreted as supplementary insights, not
+        absolute medical conclusions.
+      </Text>
     </Page>
   </Document>
 );
@@ -154,6 +166,8 @@ export default function Dashboard() {
   const [conditionInsights, setConditionInsights] = useState<string>("");
   const [observationInsights, setObservationInsights] = useState<string>("");
   const [accuracy, setAccuracy] = useState<number>();
+  const [accuracyExplanation, setAccuracyExplanation] = useState<string>("");
+  const [riskScoreExplanation, setRiskScoreExplanation] = useState<string>("");
 
   useEffect(() => {
     if (!token || !patientId) return;
@@ -325,27 +339,29 @@ export default function Dashboard() {
   ) => {
     try {
       const prompt = `
-        Combine the following raw responses for conditions and observations:
-
-        Condition response: ${conditions}
-        Observation response: ${observations}
-
-        Provide a structured JSON response in the following format:
-
-        {
-          "riskScore": [0-100], // Risk prediction score (0-100). It must not be null.
-          "recommendedTreatments": [string], // List of recommended treatments. It must not be null.
-          "conditionTrends": [string], // General trends of condition severity over time. It must not be null.
-          "preventiveMeasures": [string], // List of preventive measures. It must not be null.
-          "accuracy": [0-1], // A value between 0 and 1 representing the model's confidence in its response, where 1 is highly accurate.
-          "normalResponse": string // The raw AI model response.
-        }
-
-        Ensure the response strictly follows the JSON structure.
-        The fields "riskScore", "recommendedTreatments", "conditionTrends", and "preventiveMeasures" must not be null.
-        The "accuracy" value should be a number between 0 and 1, representing the model’s confidence in the response.
-        If any of the information is unavailable or uncertain, the model should provide a best estimate but should not return null for the above parameters.
-    `;
+          Combine the following raw responses for conditions and observations:
+  
+          Condition response: ${conditions}
+          Observation response: ${observations}
+  
+          Provide a structured JSON response in the following format:
+  
+          {
+            "riskScore": [0-100], // Risk prediction score (0-100). It must not be null.
+            "riskScoreExplanation": string, // Reason for the given risk score.
+            "recommendedTreatments": [string], // List of recommended treatments. It must not be null.
+            "conditionTrends": [string], // General trends of condition severity over time. It must not be null.
+            "preventiveMeasures": [string], // List of preventive measures. It must not be null.
+            "accuracy": [0-1], // A value between 0 and 1 representing the model's confidence in its response, where 1 is highly accurate.
+            "accuracyExplanation": string, // Explanation for the given accuracy.
+            "normalResponse": string // The raw AI model response.
+          }
+  
+          Ensure the response strictly follows the JSON structure.
+          The fields "riskScore", "riskScoreExplanation", "recommendedTreatments", "conditionTrends", and "preventiveMeasures" must not be null.
+          The "accuracy" value should be a number between 0 and 1, representing the model's confidence in the response.
+          If any of the information is unavailable or uncertain, the model should provide a best estimate but should not return null for the above parameters.
+        `;
 
       const aiResponse = await fetchGeminiResponse(prompt);
 
@@ -355,12 +371,18 @@ export default function Dashboard() {
         const cleanedResponse = aiResponse.replace(/```json|```/g, "").trim();
         const parsedResponse = JSON.parse(cleanedResponse);
 
-        setRiskScore(parsedResponse.riskScore || []);
-        setConditionTrends(parsedResponse.conditionTrends);
+        setRiskScore(parsedResponse.riskScore || 50);
+        setRiskScoreExplanation(
+          parsedResponse.riskScoreExplanation || "No explanation provided."
+        );
+        setAccuracy(parsedResponse.accuracy || 0.5);
+        setAccuracyExplanation(
+          parsedResponse.accuracyExplanation || "No explanation provided."
+        );
         setRecommendations(parsedResponse.recommendedTreatments || []);
         setNormalResponse(parsedResponse.normalResponse);
         setPreventiveMeasures(parsedResponse.preventiveMeasures || []);
-        setAccuracy(parsedResponse.accuracy);
+        setConditionTrends(parsedResponse.conditionTrends || []);
 
         return parsedResponse;
       } else {
@@ -470,6 +492,7 @@ export default function Dashboard() {
                   />
                 </RadialBarChart>
               </ResponsiveContainer>
+              <p className="text-sm">{riskScoreExplanation}</p>
             </div>
           )}
 
@@ -532,16 +555,19 @@ export default function Dashboard() {
             <div className="card bg-base-200 p-4 shadow-lg">
               <h3 className="text-lg font-bold">Overall AI Accuracy</h3>
               <p className="text-xl">{(accuracy * 100).toFixed(2)}%</p>
+              <p className="text-sm">{accuracyExplanation}</p>
               <div className="mt-4">
                 <PDFDownloadLink
                   document={
                     <AIResponsePDF
                       riskScore={riskScore}
+                      riskScoreExplanation={riskScoreExplanation}
                       recommendedTreatments={recommendations}
                       conditionTrends={conditionTrends}
                       preventiveMeasures={preventiveMeasures}
                       normalResponse={normalResponse}
                       accuracy={accuracy}
+                      accuracyExplanation={accuracyExplanation}
                     />
                   }
                   fileName="AI_Response.pdf"
