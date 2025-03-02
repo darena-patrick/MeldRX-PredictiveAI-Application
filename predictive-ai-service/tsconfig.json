@@ -22,7 +22,7 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/utils/auth.js", "src/app/launch/page.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/utils/auth.js", "src/app/launch/page.js", "/api/*.ts"],
   "exclude": ["node_modules"],
   "strict": false, // Disables all strict type-checking options
   "noImplicitAny": false, // Allows implicit `any` types

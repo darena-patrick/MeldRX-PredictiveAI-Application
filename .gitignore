@@ -36,6 +36,9 @@ predictive-ai-service/.env*
 # vercel
 predictive-ai-service/.vercel
 
+#cds-hook
+cds-hook/node_modules
+
 # typescript
 predictive-ai-service/*.tsbuildinfo
 predictive-ai-service/next-env.d.ts
