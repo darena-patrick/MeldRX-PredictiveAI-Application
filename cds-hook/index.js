@@ -1,3 +1,6 @@
+// This file is no longer used, converted everything into next.js and can be found via predictive-ai-services/pages/api/cds-services
+// Keeping this file as a backup and good for local testing
+
 const express = require('express');
 
 const app = express()
@@ -90,9 +93,4 @@ app.post('/cds-services/:id', (req, res) => {
     }
 })
 
-// app.listen(4433, () => console.log('started!')) // for local testing only
-
-// for vercel
-export default function handler(req, res) {
-    return app(req, res);
-}
+app.listen(4433, () => console.log('started!')) // for local testing only
