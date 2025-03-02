@@ -48,17 +48,18 @@ app.post('/cds-services/:id', (req, res) => {
         obs.code?.text?.toLowerCase().includes('blood pressure')
         );
 
-        console.log('observations', observations);
-        const medications = req.body.prefetch.medications || [];
+        // console.log('observations', observations);
+        // const medications = req.body.prefetch.medications || [];
         // console.log('medications', medications);
-        const procedures = req.body.prefetch.procedures || [];
+        // const procedures = req.body.prefetch.procedures || [];
         // console.log('procedures', procedures);
-        const claims = req.body.prefetch.claims || [];
+        // const claims = req.body.prefetch.claims || [];
         // console.log('claims', claims);
 
         //const bloodPressure = observations.find(obs => obs.code.text.includes('Blood Pressure')) || {};
-      //  console.log(bloodPressure);
-    // conditions if high blood preassure example. Show warning can or not, etc. Way to classify this.
+        //  console.log(bloodPressure);
+        // conditions if high blood preassure example. Show warning can or not, etc. Way to classify this.
+
         const cholesterolValue = cholesterolObs?.valueQuantity?.value || 'N/A';
         console.log('cholesterolValue', cholesterolValue);
         const bloodPressureValue = bloodPressureObs?.valueQuantity?.value || 'N/A';

@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import { RootState } from "@/app/redux/store";
 import { setConditions } from "@/app/redux/conditionSlice";
+import { setObservations } from "@/app/redux/observationsSlice";
 import {
   PieChart,
   Pie,
@@ -23,7 +24,7 @@ import {
 } from "recharts";
 import { fetchGeminiResponse } from "@/utils/serverAPICalls";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import { Document, Page, Text, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, StyleSheet, View } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
   page: {
@@ -41,13 +42,93 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
   },
+  subheader: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  list: {
+    marginLeft: 10,
+  },
+  listItem: {
+    fontSize: 12,
+    marginBottom: 3,
+  },
 });
 
-const AIResponsePDF = ({ normalResponse }: { normalResponse: string }) => (
+const AIResponsePDF = ({
+  riskScore,
+  recommendedTreatments,
+  conditionTrends,
+  preventiveMeasures,
+  normalResponse,
+  accuracy,
+}: {
+  riskScore: number;
+  recommendedTreatments: string[];
+  conditionTrends: string[];
+  preventiveMeasures: string[];
+  normalResponse: string;
+  accuracy: number;
+}) => (
   <Document>
     <Page style={styles.page}>
-      <Text style={styles.header}>AI Response</Text>
+      <Text style={styles.header}>AI Response Summary</Text>
+
+      {/* Risk Score */}
+      <Text style={styles.subheader}>Risk Score: {riskScore}%</Text>
+
+      {/* Overall AI Accuracy */}
+      <Text style={styles.subheader}>
+        Overall AI Accuracy: {(accuracy * 100).toFixed(2)}%
+      </Text>
+
+      {/* Normal Response */}
+      <Text style={styles.subheader}>Quick Summary:</Text>
       <Text style={styles.text}>{normalResponse}</Text>
+
+      {/* Recommended Treatments */}
+      {recommendedTreatments && recommendedTreatments.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.subheader}>Recommended Treatments:</Text>
+          <View style={styles.list}>
+            {recommendedTreatments.map((treatment, index) => (
+              <Text style={styles.listItem} key={index}>
+                {treatment}
+              </Text>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Condition Trends */}
+      {conditionTrends && conditionTrends.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.subheader}>Condition Trends:</Text>
+          <View style={styles.list}>
+            {conditionTrends.map((trend, index) => (
+              <Text style={styles.listItem} key={index}>
+                {trend}
+              </Text>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Preventive Measures */}
+      {preventiveMeasures && preventiveMeasures.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.subheader}>Preventive Measures:</Text>
+          <View style={styles.list}>
+            {preventiveMeasures.map((measure, index) => (
+              <Text style={styles.listItem} key={index}>
+                {measure}
+              </Text>
+            ))}
+          </View>
+        </View>
+      )}
     </Page>
   </Document>
 );
@@ -60,12 +141,19 @@ export default function Dashboard() {
   const conditions = useSelector(
     (state: RootState) => state.conditions.conditions
   );
+  const observations = useSelector(
+    (state: RootState) => state.observations.observations
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [riskScore, setRiskScore] = useState<number>(50);
   const [conditionTrends, setConditionTrends] = useState<any[]>([]);
   const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [preventiveMeasures, setPreventiveMeasures] = useState<string[]>([]);
   const [normalResponse, setNormalResponse] = useState<string>("");
+  const [conditionInsights, setConditionInsights] = useState<string>("");
+  const [observationInsights, setObservationInsights] = useState<string>("");
+  const [accuracy, setAccuracy] = useState<number>();
 
   useEffect(() => {
     if (!token || !patientId) return;
@@ -73,9 +161,9 @@ export default function Dashboard() {
     const fetchConditions = async () => {
       try {
         let allConditions: any[] = [];
-        let nextUrl = `https://app.meldrx.com/api/fhir/23cd739c-3141-4d1a-81a3-697b766ccb56/Condition?patient=${patientId}`;
+        let nextUrl = `https://app.meldrx.com/api/fhir/${process.env.NEXT_PUBLIC_APP_ID}/Condition?patient=${patientId}`;
 
-        while (nextUrl) {
+        while (nextUrl && allConditions.length < 6) {
           const bundleResponse = await axios.get(nextUrl, {
             headers: { Authorization: `Bearer ${token}` },
           });
@@ -88,21 +176,30 @@ export default function Dashboard() {
             )
           );
 
+          // Add conditions to the list, but stop after reaching 6
           allConditions = [
             ...allConditions,
             ...conditionResponses.map((res) => res.data),
           ];
+
+          // If 6 conditions are fetched, break the loop
+          if (allConditions.length >= 6) {
+            break;
+          }
+
+          // Update the nextUrl for pagination
           nextUrl =
             bundleResponse.data.link?.find(
               (link: any) => link.relation === "next"
             )?.url || null;
         }
 
-        dispatch(setConditions(allConditions));
+        // Dispatch the conditions to the store, ensuring only 6 are stored
+        dispatch(setConditions(allConditions.slice(0, 6)));
         setLoading(false);
 
-        // Generate AI-driven insights
-        fetchAIInsights(allConditions);
+        // Pass the first 6 conditions to the AI function
+        fetchConditionAIInsights(allConditions.slice(0, 6));
       } catch (error) {
         console.error("Error fetching conditions:", error);
         setError("Failed to fetch conditions.");
@@ -113,61 +210,165 @@ export default function Dashboard() {
     fetchConditions();
   }, [token, patientId, dispatch]);
 
-  const fetchAIInsights = async (conditions: any[]) => {
+  useEffect(() => {
+    if (!token || !patientId) return;
+
+    const fetchObservations = async () => {
+      try {
+        let allObservations: any[] = [];
+        let nextUrl = `https://app.meldrx.com/api/fhir/${process.env.NEXT_PUBLIC_APP_ID}/Observation?patient=${patientId}`;
+
+        while (nextUrl && allObservations.length < 6) {
+          const response = await axios.get(nextUrl, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          // Fetch individual observation entries
+          const observationResponses = await Promise.all(
+            response.data.entry.map((entry: any) =>
+              axios.get(entry.fullUrl, {
+                headers: { Authorization: `Bearer ${token}` },
+              })
+            )
+          );
+
+          // Add observations to the list, but stop after reaching 6
+          allObservations = [
+            ...allObservations,
+            ...observationResponses.map((res) => res.data),
+          ];
+
+          // If 6 observations are fetched, break the loop
+          if (allObservations.length >= 6) {
+            break;
+          }
+
+          // Update the nextUrl for pagination
+          nextUrl = response.data.link?.find(
+            (link: any) => link.relation === "next"
+          )?.url;
+        }
+
+        // Dispatch the observations to the store
+        dispatch(setObservations(allObservations.slice(0, 6))); // Ensure only the first 6 are stored
+
+        // Pass the first 6 observations to the AI function
+        fetchObservationAIInsights(allObservations.slice(0, 6));
+      } catch (error) {
+        console.error("Error fetching observations:", error);
+      }
+    };
+
+    fetchObservations();
+  }, [token, patientId, dispatch]);
+
+  const fetchConditionAIInsights = async (conditions: any[]) => {
     try {
       const conditionNames = conditions.map(
         (c) => c.code?.coding?.[0]?.display || "Unknown"
       );
 
-      /*
-          Given the condition: ${condition} and patient history: ${JSON.stringify(patientHistory)}, provide:
-        - Risk prediction (likelihood of worsening)
-        - Recommended treatments
-        - Severity classification
-        - Preventive measures`;
-          const prompt = `Given the conditions: ${conditionNames.join(
-        ", "
-      )}, provide:
-      - A risk prediction score (0-100).
-      - Recommended treatments.
-      - Condition severity trends over time.
-      - Preventive measures.`;
-
-      */
       const prompt = `
-      Given the conditions: ${conditionNames.join(
-        ", "
-      )}, provide a structured response in the following JSON format:
-  
-      {
-        "riskScore": [0-100 or null], // Risk prediction score (0-100) or null if not possible to estimate.
-        "recommendedTreatments": [string] | null, // List of recommended treatments, or null if not possible to provide.
-        "conditionTrends": [string] | null, // General trends of condition severity over time, or null if not possible to estimate.
-        "preventiveMeasures": [string] | null, // List of preventive measures, or null if not possible to provide.
-        "normalResponse": string // The raw AI model response
-      }
-  
-      If any information is unavailable or uncertain, return null for that parameter. If the prediction or recommendations are not applicable, return null as well.
-  
-      Please ensure the response strictly follows the JSON structure, with keys as shown, even if some values are null. Be concise and to the point in your response.
-  `;
+        Given the conditions: ${conditionNames.join(", ")}, 
+        provide a raw response.
+      `;
 
       const aiResponse = await fetchGeminiResponse(prompt);
 
-      console.log("aiResponse", aiResponse);
+      console.log("Raw AI response (Condition):", aiResponse);
+      setConditionInsights(aiResponse);
+
+      return aiResponse;
+    } catch (error) {
+      console.error("Error fetching Condition AI insights:", error);
+      return null;
+    }
+  };
+
+  const fetchObservationAIInsights = async (observations: any[]) => {
+    try {
+      const observationNames = observations.map((o) => {
+        const categoryCode = o.category?.[0]?.coding?.[0]?.code || "Unknown";
+        return categoryCode;
+      });
+
+      const prompt = `
+        Given the observations: ${observationNames.join(", ")}, 
+        provide a raw response.
+      `;
+
+      const aiResponse = await fetchGeminiResponse(prompt);
+
+      console.log("Raw AI response (Observation):", aiResponse);
+      setObservationInsights(aiResponse);
+
+      // Just return the raw AI response
+      return aiResponse;
+    } catch (error) {
+      console.error("Error fetching Observation AI insights:", error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    console.log("con", conditionInsights);
+    console.log("ob", observationInsights);
+    if (!token || !patientId || !conditionInsights || !observationInsights)
+      return;
+
+    combineAndFormatAIInsights(conditionInsights, observationInsights);
+  }, [conditionInsights, observationInsights]);
+
+  const combineAndFormatAIInsights = async (
+    conditions: string,
+    observations: string
+  ) => {
+    try {
+      const prompt = `
+        Combine the following raw responses for conditions and observations:
+
+        Condition response: ${conditions}
+        Observation response: ${observations}
+
+        Provide a structured JSON response in the following format:
+
+        {
+          "riskScore": [0-100], // Risk prediction score (0-100). It must not be null.
+          "recommendedTreatments": [string], // List of recommended treatments. It must not be null.
+          "conditionTrends": [string], // General trends of condition severity over time. It must not be null.
+          "preventiveMeasures": [string], // List of preventive measures. It must not be null.
+          "accuracy": [0-1], // A value between 0 and 1 representing the model's confidence in its response, where 1 is highly accurate.
+          "normalResponse": string // The raw AI model response.
+        }
+
+        Ensure the response strictly follows the JSON structure.
+        The fields "riskScore", "recommendedTreatments", "conditionTrends", and "preventiveMeasures" must not be null.
+        The "accuracy" value should be a number between 0 and 1, representing the model’s confidence in the response.
+        If any of the information is unavailable or uncertain, the model should provide a best estimate but should not return null for the above parameters.
+    `;
+
+      const aiResponse = await fetchGeminiResponse(prompt);
+
+      console.log("Final AI response (Combined):", aiResponse);
 
       if (aiResponse) {
         const cleanedResponse = aiResponse.replace(/```json|```/g, "").trim();
-
         const parsedResponse = JSON.parse(cleanedResponse);
 
         setRiskScore(parsedResponse.riskScore || []);
         setConditionTrends(parsedResponse.conditionTrends);
-        setRecommendations(parsedResponse.recommendations || []);
+        setRecommendations(parsedResponse.recommendedTreatments || []);
         setNormalResponse(parsedResponse.normalResponse);
+        setPreventiveMeasures(parsedResponse.preventiveMeasures || []);
+        setAccuracy(parsedResponse.accuracy);
+
+        return parsedResponse;
+      } else {
+        return null;
       }
     } catch (error) {
-      console.error("Error fetching AI insights:", error);
+      console.error("Error combining AI insights:", error);
+      return null;
     }
   };
 
@@ -245,6 +446,8 @@ export default function Dashboard() {
           {riskScore !== null && (
             <div className="card bg-base-200 p-4 shadow-lg">
               <h3 className="text-lg font-bold">Risk Score</h3>
+              <p className="text-xl font-semibold mb-4">{riskScore}%</p>{" "}
+              {/* Display risk score above the gauge */}
               <ResponsiveContainer width="100%" height={200}>
                 <RadialBarChart
                   cx="50%"
@@ -275,7 +478,12 @@ export default function Dashboard() {
             <div className="card bg-base-200 p-4 shadow-lg">
               <h3 className="text-lg font-bold">Condition Trends Over Time</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={conditionTrends}>
+                <LineChart
+                  data={conditionTrends.map((trend, index) => ({
+                    date: `Date ${index + 1}`, // Simulating dates for now
+                    severity: trend.length % 100, // Using string length as a mock severity score
+                  }))}
+                >
                   <XAxis dataKey="date" />
                   <YAxis domain={[0, 100]} />
                   <Tooltip />
@@ -299,14 +507,43 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* AI Recommendations */}
+          {/* Preventive Measures */}
+          {preventiveMeasures && preventiveMeasures.length > 0 && (
+            <div className="card bg-base-200 p-4 shadow-lg">
+              <h3 className="text-lg font-bold">Preventive Measures</h3>
+              <ul className="list-disc list-inside">
+                {preventiveMeasures.map((measure, index) => (
+                  <li key={index}>{measure}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* AI Raw Response */}
           {normalResponse && (
             <div className="card bg-base-200 p-4 shadow-lg">
-              <h3 className="text-lg font-bold">AI Raw Response</h3>
+              <h3 className="text-lg font-bold">Quick Summary</h3>
               <p className="text-sm">{normalResponse}</p>
+            </div>
+          )}
+
+          {/* Overall AI Accuracy */}
+          {accuracy !== null && accuracy !== undefined && (
+            <div className="card bg-base-200 p-4 shadow-lg">
+              <h3 className="text-lg font-bold">Overall AI Accuracy</h3>
+              <p className="text-xl">{(accuracy * 100).toFixed(2)}%</p>
               <div className="mt-4">
                 <PDFDownloadLink
-                  document={<AIResponsePDF normalResponse={normalResponse} />}
+                  document={
+                    <AIResponsePDF
+                      riskScore={riskScore}
+                      recommendedTreatments={recommendations}
+                      conditionTrends={conditionTrends}
+                      preventiveMeasures={preventiveMeasures}
+                      normalResponse={normalResponse}
+                      accuracy={accuracy}
+                    />
+                  }
                   fileName="AI_Response.pdf"
                 >
                   {({ loading }) =>
