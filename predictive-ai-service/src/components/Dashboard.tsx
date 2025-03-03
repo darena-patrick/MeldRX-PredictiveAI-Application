@@ -336,8 +336,12 @@ export default function Dashboard() {
     conditions: string,
     observations: string
   ) => {
-    try {
-      const prompt = `
+    const maxRetries = 10;
+    let attempt = 0;
+
+    while (attempt < maxRetries) {
+      try {
+        const prompt = `
           Combine the following raw responses for conditions and observations:
   
           Condition response: ${conditions}
@@ -362,37 +366,46 @@ export default function Dashboard() {
           If any of the information is unavailable or uncertain, the model should provide a best estimate but should not return null for the above parameters.
         `;
 
-      const aiResponse = await fetchGeminiResponse(prompt);
+        const aiResponse = await fetchGeminiResponse(prompt);
 
-      // console.log("Final AI response (Combined):", aiResponse);
+        // console.log("Final AI response (Combined):", aiResponse);
 
-      if (aiResponse) {
-        const cleanedResponse = aiResponse
-          .replace(/```json/g, "")
-          .replace(/```/g, "")
-          .trim();
-        const parsedResponse = JSON.parse(cleanedResponse);
+        if (aiResponse) {
+          const cleanedResponse = aiResponse
+            .replace(/```json/g, "")
+            .replace(/```/g, "")
+            .trim();
+          const parsedResponse = JSON.parse(cleanedResponse);
 
-        setRiskScore(parsedResponse.riskScore || 50);
-        setRiskScoreExplanation(
-          parsedResponse.riskScoreExplanation || "No explanation provided."
-        );
-        setAccuracy(parsedResponse.accuracy || 0.5);
-        setAccuracyExplanation(
-          parsedResponse.accuracyExplanation || "No explanation provided."
-        );
-        setRecommendations(parsedResponse.recommendedTreatments || []);
-        setNormalResponse(parsedResponse.normalResponse);
-        setPreventiveMeasures(parsedResponse.preventiveMeasures || []);
-        setConditionTrends(parsedResponse.conditionTrends || []);
+          setRiskScore(parsedResponse.riskScore || 50);
+          setRiskScoreExplanation(
+            parsedResponse.riskScoreExplanation || "No explanation provided."
+          );
+          setAccuracy(parsedResponse.accuracy || 0.5);
+          setAccuracyExplanation(
+            parsedResponse.accuracyExplanation || "No explanation provided."
+          );
+          setRecommendations(parsedResponse.recommendedTreatments || []);
+          setNormalResponse(parsedResponse.normalResponse);
+          setPreventiveMeasures(parsedResponse.preventiveMeasures || []);
+          setConditionTrends(parsedResponse.conditionTrends || []);
 
-        return parsedResponse;
-      } else {
-        return null;
+          return parsedResponse;
+        } else {
+          return null;
+        }
+      } catch (error) {
+        console.warn("Error combining AI insights:", error);
+        attempt++;
+        console.warn("Re-trying again automatically with count", attempt);
+
+        if (attempt < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, 500)); // Waiting 500ms before retrying to avoid spamming AI model
+        } else {
+          console.error("Max retry attempts reached. Returning null.");
+          return null;
+        }
       }
-    } catch (error) {
-      console.error("Error combining AI insights:", error);
-      return null;
     }
   };
 
