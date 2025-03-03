@@ -356,7 +356,7 @@ export default function Dashboard() {
             "normalResponse": string // The raw AI model response.
           }
   
-          Ensure the response strictly follows the JSON structure.
+          Ensure the response is a valid JSON object and strictly follows the JSON structure.
           The fields "riskScore", "riskScoreExplanation", "recommendedTreatments", "conditionTrends", and "preventiveMeasures" must not be null.
           The "accuracy" value should be a number between 0 and 1, representing the model's confidence in the response.
           If any of the information is unavailable or uncertain, the model should provide a best estimate but should not return null for the above parameters.
@@ -367,7 +367,10 @@ export default function Dashboard() {
       // console.log("Final AI response (Combined):", aiResponse);
 
       if (aiResponse) {
-        const cleanedResponse = aiResponse.replace(/```json|```/g, "").trim();
+        const cleanedResponse = aiResponse
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim();
         const parsedResponse = JSON.parse(cleanedResponse);
 
         setRiskScore(parsedResponse.riskScore || 50);
