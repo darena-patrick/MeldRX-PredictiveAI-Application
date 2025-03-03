@@ -1,6 +1,6 @@
 # Predictive AI Healthcare Insighter
 
-**Demo Video:** [Live Demo](https://google.com)  
+**Demo Video:** [Demo](https://www.youtube.com/watch?v=WfQ6cVL-SXc)  
 **Privacy Policy:** [View Here](https://meld-rx-predictive-ai-application.vercel.app/privacy-policy)  
 **Terms of Service:** [View Here](https://meld-rx-predictive-ai-application.vercel.app/terms-of-service)
 
