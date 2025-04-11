@@ -25,6 +25,7 @@ import {
 import { fetchGeminiResponse } from "@/utils/serverAPICalls";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Document, Page, Text, StyleSheet, View } from "@react-pdf/renderer";
+import { setDocuments } from "@/app/redux/documentSlice";
 
 const styles = StyleSheet.create({
   page: {
@@ -168,6 +169,54 @@ export default function Dashboard() {
   const [accuracy, setAccuracy] = useState<number>();
   const [accuracyExplanation, setAccuracyExplanation] = useState<string>("");
   const [riskScoreExplanation, setRiskScoreExplanation] = useState<string>("");
+
+  useEffect(() => {
+    if (!token || !patientId) return;
+
+    const fetchDocuments = async () => {
+      try {
+        let allDocuments: any[] = [];
+        let nextUrl = `https://app.meldrx.com/api/fhir/${process.env.NEXT_PUBLIC_APP_ID}/DocumentReference?patient=${patientId}`;
+
+        while (nextUrl && allDocuments.length < 10) {
+          const bundleResponse = await axios.get(nextUrl, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          const documentResponses = await Promise.all(
+            bundleResponse.data.entry.map((entry: any) =>
+              axios.get(entry.fullUrl, {
+                headers: { Authorization: `Bearer ${token}` },
+              })
+            )
+          );
+
+          allDocuments = [
+            ...allDocuments,
+            ...documentResponses.map((res) => res.data),
+          ];
+
+          if (allDocuments.length >= 10) break;
+
+          nextUrl =
+            bundleResponse.data.link?.find(
+              (link: any) => link.relation === "next"
+            )?.url || null;
+        }
+
+        dispatch(setDocuments(allDocuments));
+        console.log("docs are", allDocuments);
+        console.log("docs are stringify", JSON.stringify(allDocuments));
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching documents:", error);
+        setError("Failed to fetch documents.");
+        setLoading(false);
+      }
+    };
+
+    fetchDocuments();
+  }, [token, patientId, dispatch]);
 
   useEffect(() => {
     if (!token || !patientId) return;

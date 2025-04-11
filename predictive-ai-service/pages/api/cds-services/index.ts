@@ -20,6 +20,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           medications: "MedicationRequest?patient={{context.patientId}}",
           procedures: "Procedure?patient={{context.patientId}}",
           claims: "Claim?patient={{context.patientId}}",
+          documents: "DocumentReference?patient={{context.patientId}}"
         },
       },
     ],

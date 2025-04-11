@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './authSlice';
 import conditionsReducer from "./conditionSlice"; 
 import observationsReducer from "./observationsSlice";
+import documentsReducer from './documentSlice';
 
 
 export const store = configureStore({
@@ -9,6 +10,7 @@ export const store = configureStore({
     auth: authReducer,
     conditions: conditionsReducer,
     observations: observationsReducer,
+    documents: documentsReducer,
   },
 });
 
