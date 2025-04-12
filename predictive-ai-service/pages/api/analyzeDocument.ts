@@ -27,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const response = await axios.post(backendUrl, { documents }, {
       headers: { "Content-Type": "application/json" },
-      timeout: 30000, // Increase timeout if needed
+     // timeout: 30000, // Increase timeout if needed
     });
     return res.status(200).json(response.data);
     
