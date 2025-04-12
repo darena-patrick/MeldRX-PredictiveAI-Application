@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, UploadFile
 from pydantic import BaseModel
 from typing import Optional
-from base64
+import base64
 
 app = FastAPI()
 
@@ -46,4 +46,10 @@ def analyze_radiology(text):
     return {
         "model": "radiology-bert",
         "summary": f"Radiol summary: {text[:200]}..."
+    }
+
+def analyze_general_note(text):
+    return {
+        "model": "general-note-bert",
+        "summary": f"Note summary: {text[:200]}..."
     }
