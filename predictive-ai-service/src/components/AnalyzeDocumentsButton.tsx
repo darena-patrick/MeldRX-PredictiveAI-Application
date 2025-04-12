@@ -46,11 +46,14 @@ return {
 You can npm install uuid for this.
 */
     try {
+      console.log("documents", documents);
       const documentsToSend = documents.map((doc) => {
         // You may need to customize this based on how content is stored in `resource`
         const textContent = doc.resource?.content?.[0]?.attachment?.data; // base64 encoded content
+        console.log("textConent", textContent);
         const contentType =
           doc.resource?.content?.[0]?.attachment?.contentType || "text/plain";
+        console.log("contentType", contentType);
 
         return {
           content_type: contentType,
