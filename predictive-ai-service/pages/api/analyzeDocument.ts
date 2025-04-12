@@ -25,22 +25,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: "Missing python backend URL" });
     }
 
-    const results = await Promise.all(
-      documents.map(async (doc) => {
-        try {
-          const response = await axios.post(backendUrl, doc, {
-            headers: { "Content-Type": "application/json" },
-            timeout: 15000, // 15 seconds timeout
-          });
-          return { status: response.status, data: response.data };
-        } catch (err: any) {
-          console.error("Error analyzing doc:", err.message);
-          return { status: 500, data: { error: err.message } };
-        }
-      })
-    );
-
-    return res.status(200).json({ results });
+    const response = await axios.post(backendUrl, { documents }, {
+      headers: { "Content-Type": "application/json" },
+      timeout: 30000, // Increase timeout if needed
+    });
+    return res.status(200).json(response.data);
+    
   } catch (error: any) {
     console.error("Error sending to backend:", error.message);
     return res.status(500).json({ message: "Failed to analyze document", error: error.message });

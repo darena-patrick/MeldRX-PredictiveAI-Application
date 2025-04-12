@@ -21,12 +21,16 @@ class DocumentReference(BaseModel):
     date: Optional[str]
     content: List[Content]
 
+class DocumentPayload(BaseModel):
+    documents: List[DocumentReference]
+
 @app.get("/")
 def read_root():
     return {"message": "Backend is running!"}
 
 @app.post('/analyze-document')
-def analyze_documents(documents: List[DocumentReference]):
+def analyze_documents(payload: DocumentPayload):
+    documents = payload.documents
     results = []
     for doc in documents:
         attachment = doc.content[0].attachment
