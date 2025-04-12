@@ -9,6 +9,10 @@ class DocumentInput(BaseModel):
     content_type: str
     base64_content: str
 
+@app.get("/")
+def read_root():
+    return {"message": "Backend is running!"}
+
 @app.post('/analyze-document')
 async def analyze_document(doc: DocumentInput):
     try:
