@@ -1,9 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-
-interface DocumentInput {
-  content_type: string;
-  base64_content: string;
-}
+import axios from "axios";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -11,11 +7,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(405).json({ message: "Method not allowed" });
     }
 
-    const { content_type, base64_content } = req.body as DocumentInput;
+    const { documents } = req.body;
 
-    if (!content_type || !base64_content) {
-      return res.status(400).json({ message: "Missing content_type or base64_content" });
+
+    if (
+      !Array.isArray(documents) ||
+      documents.some((doc) => !doc.content_type || !doc.base64_content)
+    ) {
+      return res.status(400).json({ message: "Invalid or incomplete documents provided" });
     }
+    
 
     // Send the document info to the Python backend
     const backendUrl = process.env.PYTHON_BACKEND_URL;
@@ -24,21 +25,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: "Missing python backend URL" });
     }
 
-    const response = await fetch(backendUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ content_type, base64_content }),
-    });
+    const results = await Promise.all(
+      documents.map(async (doc) => {
+        try {
+          const response = await axios.post(backendUrl, doc, {
+            headers: { "Content-Type": "application/json" },
+            timeout: 15000, // 15 seconds timeout
+          });
+          return { status: response.status, data: response.data };
+        } catch (err: any) {
+          console.error("Error analyzing doc:", err.message);
+          return { status: 500, data: { error: err.message } };
+        }
+      })
+    );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(response.status).json({ message: "Backend error", details: data });
-    }
-
-    return res.status(200).json(data);
+    return res.status(200).json({ results });
   } catch (error: any) {
     console.error("Error sending to backend:", error.message);
     return res.status(500).json({ message: "Failed to analyze document", error: error.message });

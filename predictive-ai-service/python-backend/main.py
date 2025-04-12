@@ -1,59 +1,100 @@
 from fastapi import FastAPI, HTTPException, UploadFile
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
 import base64
+import requests
 
 app = FastAPI()
 
-class DocumentInput(BaseModel):
-    content_type: str
-    base64_content: str
+class Attachment(BaseModel):
+    contentType: str
+    data: Optional[str] = None
+    url: Optional[str] = None
+
+class Content(BaseModel):
+    attachment: Attachment
+
+class DocumentReference(BaseModel):
+    resourceType: str
+    id: str
+    type: dict
+    date: Optional[str]
+    content: List[Content]
 
 @app.get("/")
 def read_root():
     return {"message": "Backend is running!"}
 
 @app.post('/analyze-document')
-async def analyze_document(doc: DocumentInput):
-    try:
-        if doc.content_type != "text/plain":
-            raise HTTPException(status_code=400, detail="Only text/plain content is supported here.")
-        
-        decoded_text = base64.b64decode(doc.base64_content).decode('utf-8')
+def analyze_documents(documents: List[DocumentReference]):
+    results = []
+    for doc in documents:
+        attachment = doc.content[0].attachment
+        content_type = attachment.contentType
+        data = None
 
-        # Apply simple keyword routing or a lightweight classifier
-        if "pathology" in decoded_text.lower():
-            result = analyze_pathology(decoded_text)
-        elif "radiology" in decoded_text.lower():
-            result = analyze_radiology(decoded_text)
+        # Handle base64-encoded content
+        if attachment.data:
+            try:
+                decoded_data = base64.b64decode(attachment.data).decode('utf-8')
+                data = decoded_data
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Base64 decode error: {e}")
+        # Handle external URLs (e.g., XML files)
+        elif attachment.url:
+            try:
+                response = requests.get(attachment.url)
+                response.raise_for_status()
+                data = response.text
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to fetch from URL: {e}")
         else:
-            result = analyze_general_note(decoded_text)
-        
-        return {
-            "type": "text",
-            "routed_to": result["model"],
-            "summary": result["summary"],
-        }
+            continue
 
+        # Route based on content type
+        if "text/plain" in content_type:
+            result = process_plain_text(data)
+        elif "text/html" in content_type:
+            result = process_html(data)
+        elif "application/xml" in content_type:
+            result = process_ccda_xml(data)
+        elif "application/pdf" in content_type:
+            result = process_pdf(data)
+        elif "application/dicom" in content_type:
+            result = process_dicom(data)
+        else:
+            result = {"error": "Unsupported content type"}
+
+        results.append({
+            "document_id": doc.id,
+            "type": doc.type,
+            "content_type": content_type,
+            "analysis": result,
+        })
+
+    print(results)
+
+    return {"results": results}
+
+# Placeholder functions
+def process_plain_text(text):
+    return {"summary": text[:300]}
+
+def process_html(html):
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    return {"text": soup.get_text()[:300]}
+
+def process_ccda_xml(xml):
+    import xml.etree.ElementTree as ET
+    try:
+        tree = ET.fromstring(xml)
+        return {"root_tag": tree.tag}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"error": f"XML parsing error: {e}"}
 
-def analyze_pathology(text):
-    # Replace with HuggingFace model inference logic
-    return {
-        "model": "pathology-bert",
-        "summary": f"Pathology summary: {text[:200]}..."
-    }
+def process_pdf(pdf_bytes):
+    return {"note": "PDF processing not implemented yet"}
 
-def analyze_radiology(text):
-    # Replace with HuggingFace model inference logic
-    return {
-        "model": "radiology-bert",
-        "summary": f"Radiol summary: {text[:200]}..."
-    }
-
-def analyze_general_note(text):
-    return {
-        "model": "general-note-bert",
-        "summary": f"Note summary: {text[:200]}..."
-    }
+def process_dicom(dicom_bytes):
+    return {"note": "DICOM processing not implemented yet"}
