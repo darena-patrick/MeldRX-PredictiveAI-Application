@@ -218,8 +218,6 @@ export default function Dashboard() {
     fetchDocuments();
   }, [token, patientId, dispatch]);
 
-  return <></>;
-
   useEffect(() => {
     if (!token || !patientId) return;
 
