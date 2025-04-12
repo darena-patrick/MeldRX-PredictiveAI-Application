@@ -47,12 +47,14 @@ You can npm install uuid for this.
 */
     try {
       console.log("documents", documents);
+
       const documentsToSend = documents.map((doc) => {
-        // You may need to customize this based on how content is stored in `resource`
-        const textContent = doc.resource?.content?.[0]?.attachment?.data; // base64 encoded content
-        console.log("textConent", textContent);
-        const contentType =
-          doc.resource?.content?.[0]?.attachment?.contentType || "text/plain";
+        const attachment = doc.content?.[0]?.attachment;
+
+        const textContent = attachment?.data; // base64 content
+        const contentType = attachment?.contentType || "text/plain";
+
+        console.log("textContent", textContent);
         console.log("contentType", contentType);
 
         return {
@@ -61,12 +63,21 @@ You can npm install uuid for this.
         };
       });
 
+      // Filter out documents that are missing data
+      const validDocs = documentsToSend.filter(
+        (doc) => doc.base64_content && doc.content_type
+      );
+
+      if (validDocs.length === 0) {
+        console.warn("No valid documents to send.");
+        return;
+      }
+
       const response = await axios.post("/api/analyzeDocument", {
-        documents: documentsToSend,
+        documents: validDocs,
       });
 
       console.log("Analysis result:", response.data);
-      // You could dispatch another action here to store the response in Redux if needed
     } catch (error: any) {
       console.error("Failed to analyze documents:", error.message);
     }

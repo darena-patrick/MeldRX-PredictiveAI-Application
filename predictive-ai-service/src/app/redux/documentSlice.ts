@@ -1,13 +1,25 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-interface Document {
+
+interface FHIRAttachment {
+  contentType?: string;
+  data?: string;
+  url?: string;
+}
+
+interface FHIRContent {
+  attachment?: FHIRAttachment;
+}
+
+interface DocumentReference {
+  resourceType: "DocumentReference";
   id: string;
-  fullUrl: string;
-  resource: any;
+  content?: FHIRContent[];
+  [key: string]: any; // Optional for catching extras like type, subject, etc.
 }
 
 interface DocumentsState {
-  documents: Document[];
+  documents: DocumentReference[];
 }
 
 const initialState: DocumentsState = {
@@ -18,7 +30,7 @@ const documentsSlice = createSlice({
   name: "documents",
   initialState,
   reducers: {
-    setDocuments: (state, action: PayloadAction<Document[]>) => {
+    setDocuments: (state, action: PayloadAction<DocumentReference[]>) => {
       state.documents = action.payload;
     },
   },
