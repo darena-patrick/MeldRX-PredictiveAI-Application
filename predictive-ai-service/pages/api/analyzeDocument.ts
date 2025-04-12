@@ -18,7 +18,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Send the document info to the Python backend
-    const backendUrl = process.env.PYTHON_BACKEND_URL || "http://localhost:8000/analyzeDocument";
+    const backendUrl = process.env.PYTHON_BACKEND_URL;
+
+    if (!backendUrl) {
+      return res.status(400).json({ message: "Missing python backend URL" });
+    }
 
     const response = await fetch(backendUrl, {
       method: "POST",
