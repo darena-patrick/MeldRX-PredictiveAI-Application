@@ -6,7 +6,8 @@ import { setUser, setToken, setPatientId } from "./redux/authSlice"; // Adjust p
 import { handleCallback, handleLaunch } from "../utils/auth"; // Assuming these functions are implemented
 import Dashboard from "@/components/Dashboard";
 import axios from "axios";
-import AnalyzeDocumentsButton from "@/components/AnalyzeDocumentsButton";
+// import AnalyzeDocumentsButton from "@/components/AnalyzeDocumentsButton";
+import { DocumentWheel } from "@/components/DocumentWheel";
 
 export default function Home() {
   const dispatch = useDispatch();
@@ -82,12 +83,17 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-base-100 p-6">
-      <AnalyzeDocumentsButton />
+      {/* <AnalyzeDocumentsButton /> */}
       <header className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-semibold text-blue-700">
           Welcome to the Predictive AI Healthcare App
         </h1>
       </header>
+
+      <div className="p-4">
+        <h1 className="text-xl font-bold mb-4">Patient Documents</h1>
+        <DocumentWheel />
+      </div>
 
       {loading ? (
         <div className="flex justify-center items-center">
