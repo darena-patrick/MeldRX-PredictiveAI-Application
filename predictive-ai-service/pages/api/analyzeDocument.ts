@@ -33,6 +33,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     //  // timeout: 30000, // Increase timeout if needed
     // });
 
+    console.warn('document', JSON.stringify(document));
+
     const response = await axios.post(backendUrl, {
       document, // send the entire FHIR-style doc object
     });
