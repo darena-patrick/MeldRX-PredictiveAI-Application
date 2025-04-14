@@ -2,7 +2,6 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  try {
     if (req.method !== "POST") {
       return res.status(405).json({ message: "Method not allowed" });
     }
@@ -28,21 +27,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: "Missing python backend URL" });
     }
 
-    // const response = await axios.post(backendUrl, { documents }, {
-    //   headers: { "Content-Type": "application/json" },
-    //  // timeout: 30000, // Increase timeout if needed
-    // });
-
-    console.warn('document', JSON.stringify(document));
-
-    const response = await axios.post(backendUrl, {
-      documents: document, // send the entire FHIR-style doc object
-    });
-
-    return res.status(200).json(response.data);
-    
-  } catch (error: any) {
-    console.error("Error sending to backend:", error.message);
-    return res.status(500).json({ message: "Failed to analyze document", error: error.message });
-  }
+    try {
+      const response = await axios.post(`${backendUrl}/analyze-document`, {
+        documents: document, 
+      });
+  
+      return res.status(200).json(response.data);
+    } catch (error: any) {
+      console.error("Backend error:", error.response?.data || error.message);
+      return res.status(500).json({
+        message: `Error communicating with backend for payload ${JSON.stringify({ documents: document }, null, 2)}`,
+        error: error.response?.data || error.message,
+      });
+    }
 }
