@@ -39,13 +39,17 @@ export const DocumentWheel: React.FC = () => {
         return;
       }
 
+      //   const response = await axios.post("/api/analyzeDocument", {
+      //     documents: [
+      //       {
+      //         content_type: contentType,
+      //         base64_content: textContent,
+      //       },
+      //     ],
+      //   });
+
       const response = await axios.post("/api/analyzeDocument", {
-        documents: [
-          {
-            content_type: contentType,
-            base64_content: textContent,
-          },
-        ],
+        documents: [doc],
       });
 
       console.log("Analysis result:", response.data);

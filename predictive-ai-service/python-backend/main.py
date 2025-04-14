@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 import base64
 import requests
+from fastapi import Request
 
 app = FastAPI()
 
@@ -29,7 +30,9 @@ def read_root():
     return {"message": "Backend is running!"}
 
 @app.post('/analyze-document')
-def analyze_documents(payload: DocumentPayload):
+def analyze_documents(payload: DocumentPayload, request: Request):
+    raw = await request.body()
+    print("Incoming raw payload:", raw.decode())
     documents = payload.documents
     results = []
     for doc in documents:

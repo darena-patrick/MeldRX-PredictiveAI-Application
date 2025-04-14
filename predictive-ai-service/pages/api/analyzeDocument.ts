@@ -7,15 +7,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(405).json({ message: "Method not allowed" });
     }
 
-    const { documents } = req.body;
+    const { document } = req.body;
 
-
-    if (
-      !Array.isArray(documents) ||
-      documents.some((doc) => !doc.content_type || !doc.base64_content)
-    ) {
-      return res.status(400).json({ message: "Invalid or incomplete documents provided" });
+    if (!document || !document.content || !document.content[0]?.attachment) {
+      return res.status(400).json({ message: "Invalid document structure" });
     }
+
+    // if (
+    //   !Array.isArray(documents) ||
+    //   documents.some((doc) => !doc.content_type || !doc.base64_content)
+    // ) {
+    //   return res.status(400).json({ message: "Invalid or incomplete documents provided" });
+    // }
     
 
     // Send the document info to the Python backend
@@ -25,10 +28,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: "Missing python backend URL" });
     }
 
-    const response = await axios.post(backendUrl, { documents }, {
-      headers: { "Content-Type": "application/json" },
-     // timeout: 30000, // Increase timeout if needed
+    // const response = await axios.post(backendUrl, { documents }, {
+    //   headers: { "Content-Type": "application/json" },
+    //  // timeout: 30000, // Increase timeout if needed
+    // });
+
+    const response = await axios.post(backendUrl, {
+      documents: [document], // send the entire FHIR-style doc object
     });
+
     return res.status(200).json(response.data);
     
   } catch (error: any) {
