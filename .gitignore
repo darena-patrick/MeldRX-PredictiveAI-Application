@@ -45,3 +45,5 @@ predictive-ai-service/next-env.d.ts
 
 Sample_Fhir_Bundles
 AliceNewman.xml
+
+predictive-ai-service/python-backend/__pycache__

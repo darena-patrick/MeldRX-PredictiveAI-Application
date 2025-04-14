@@ -51,7 +51,7 @@ export const DocumentWheel: React.FC = () => {
       console.log("doc", doc);
 
       const response = await axios.post("/api/analyzeDocument", {
-        documents: [doc],
+        document: [doc],
       });
 
       console.log("Analysis result:", response.data);

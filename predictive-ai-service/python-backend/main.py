@@ -40,6 +40,7 @@ class DocumentPayload(BaseModel):
 @app.get("/")
 def read_root():
     return {"message": "Backend is running!"}
+# uvicorn main:app --reload
 
 @app.post('/analyze-document')
 async def analyze_documents(payload: DocumentPayload, request: Request):
