@@ -12,8 +12,14 @@ class Attachment(BaseModel):
     data: Optional[str] = None
     url: Optional[str] = None
 
+    class Config:
+        extra = Extra.allow
+
 class Content(BaseModel):
     attachment: Attachment
+
+    class Config:
+        extra = Extra.allow
 
 class DocumentReference(BaseModel):
     resourceType: str
@@ -22,8 +28,14 @@ class DocumentReference(BaseModel):
     date: Optional[str]
     content: List[Content]
 
+    class Config:
+        extra = Extra.allow
+
 class DocumentPayload(BaseModel):
     documents: List[DocumentReference]
+
+    class Config:
+        extra = Extra.allow
 
 @app.get("/")
 def read_root():
