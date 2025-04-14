@@ -6,18 +6,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(405).json({ message: "Method not allowed" });
     }
 
-    const { document } = req.body;
+    const { documents } = req.body;
 
-    if (!document || !document.content || !document.content[0]?.attachment) {
-      return res.status(400).json({ message: "Invalid document structure" });
+    if (
+      !Array.isArray(documents) ||
+      documents.some((doc) => !doc.content_type || !doc.base64_content)
+    ) {
+      return res.status(400).json({ message: "Invalid or incomplete documents provided" });
     }
-
-    // if (
-    //   !Array.isArray(documents) ||
-    //   documents.some((doc) => !doc.content_type || !doc.base64_content)
-    // ) {
-    //   return res.status(400).json({ message: "Invalid or incomplete documents provided" });
-    // }
     
 
     // Send the document info to the Python backend
@@ -29,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
       const response = await axios.post(`${backendUrl}/analyze-document`, {
-        documents: document, 
+        documents,
       });
   
       return res.status(200).json(response.data);

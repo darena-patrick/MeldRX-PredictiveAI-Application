@@ -48,15 +48,7 @@ export const DocumentWheel: React.FC = () => {
       //     ],
       //   });
 
-      const backendUrl = process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL;
-
-      if (!backendUrl) {
-        throw new Error("Missing python backend URL");
-      }
-
-      console.log({ documents: [doc] });
-
-      const response = await axios.post(backendUrl, {
+      const response = await axios.post("/api/analyzeDocument", {
         documents: [doc],
       });
 
