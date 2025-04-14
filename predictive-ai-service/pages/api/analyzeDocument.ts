@@ -36,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.warn('document', JSON.stringify(document));
 
     const response = await axios.post(backendUrl, {
-      document, // send the entire FHIR-style doc object
+      documents: document, // send the entire FHIR-style doc object
     });
 
     return res.status(200).json(response.data);
