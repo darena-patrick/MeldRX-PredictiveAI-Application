@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra
 from typing import List, Optional
 import base64
 import requests
