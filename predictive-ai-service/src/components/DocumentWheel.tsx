@@ -48,7 +48,7 @@ export const DocumentWheel: React.FC = () => {
       //     ],
       //   });
 
-      const backendUrl = process.env.PUBLIC_NEXT_PYTHON_BACKEND_URL;
+      const backendUrl = process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL;
 
       if (!backendUrl) {
         throw new Error("Missing python backend URL");
