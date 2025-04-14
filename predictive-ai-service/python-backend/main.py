@@ -30,7 +30,7 @@ def read_root():
     return {"message": "Backend is running!"}
 
 @app.post('/analyze-document')
-def analyze_documents(payload: DocumentPayload, request: Request):
+async def analyze_documents(payload: DocumentPayload, request: Request):
     raw = await request.body()
     print("Incoming raw payload:", raw.decode())
     documents = payload.documents
