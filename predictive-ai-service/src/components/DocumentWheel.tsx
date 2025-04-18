@@ -26,6 +26,9 @@ export const DocumentWheel: React.FC = () => {
 
   const handleAnalyze = async (doc: DocumentReference) => {
     try {
+      console.log("doc", doc);
+      console.log("doc string", JSON.stringify(doc));
+
       const attachment = doc.content?.[0]?.attachment;
       const textContent = attachment?.data;
       const contentType = attachment?.contentType || "text/plain";
@@ -47,9 +50,6 @@ export const DocumentWheel: React.FC = () => {
       //       },
       //     ],
       //   });
-
-      console.log("doc", doc);
-      console.log("doc string", JSON.stringify(doc));
 
       const response = await axios.post("/api/analyzeDocument", {
         document: doc,
