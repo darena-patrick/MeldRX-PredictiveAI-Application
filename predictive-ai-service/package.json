@@ -19,7 +19,10 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-redux": "^9.2.0",
-    "recharts": "^2.15.1"
+    "recharts": "^2.15.1",
+    "@azure-rest/ai-inference": "latest",
+    "@azure/core-auth": "latest",
+    "@azure/core-sse": "latest"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
