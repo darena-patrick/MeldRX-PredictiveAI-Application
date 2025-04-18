@@ -2,17 +2,18 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { AzureKeyCredential } from "@azure/core-auth";
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 
-const endpoint = "https://models.github.ai/inference";
-const modelName = "meta/Llama-3.2-11B-Vision-Instruct";
-
-const token = process.env.GITHUB_TOKEN;
-
-const client = ModelClient(endpoint, new AzureKeyCredential(token!));
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  
     if (req.method !== "POST") {
       return res.status(405).json({ message: "Method not allowed" });
     }
+
+    const endpoint = "https://models.github.ai/inference";
+    const modelName = "meta/Llama-3.2-11B-Vision-Instruct";
+
+    const token = process.env.GITHUB_TOKEN;
+
+    const client = ModelClient(endpoint, new AzureKeyCredential(token!));
 
     const { document } = req.body;
 
