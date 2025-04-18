@@ -73,7 +73,7 @@ export const DocumentWheel: React.FC = () => {
               className="card w-80 bg-base-100 shadow-xl shrink-0"
             >
               <div className="card-body space-y-2">
-                {isImage && (
+                {isImage && attachment && (
                   <img
                     src={attachment.url}
                     alt="Medical image"
