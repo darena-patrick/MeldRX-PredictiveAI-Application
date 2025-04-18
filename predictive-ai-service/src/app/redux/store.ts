@@ -3,7 +3,7 @@ import authReducer from './authSlice';
 import conditionsReducer from "./conditionSlice"; 
 import observationsReducer from "./observationsSlice";
 import documentsReducer from './documentSlice';
-
+import analysisReducer from "./analysisSlice";
 
 export const store = configureStore({
   reducer: {
@@ -11,6 +11,8 @@ export const store = configureStore({
     conditions: conditionsReducer,
     observations: observationsReducer,
     documents: documentsReducer,
+    analysis: analysisReducer,
+
   },
 });
 

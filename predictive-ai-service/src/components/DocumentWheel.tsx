@@ -4,6 +4,8 @@ import React from "react";
 import axios from "axios";
 import { RootState } from "@/app/redux/store";
 import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
+import { addAnalysis } from "@/app/redux/analysisSlice";
 
 type DocumentReference = {
   id: string;
@@ -23,39 +25,26 @@ export const DocumentWheel: React.FC = () => {
   const documents = useSelector(
     (state: RootState) => state.documents.documents
   );
+  const dispatch = useDispatch();
 
   const handleAnalyze = async (doc: DocumentReference) => {
     try {
       console.log("doc", doc);
       console.log("doc string", JSON.stringify(doc));
 
-      const attachment = doc.content?.[0]?.attachment;
-      const textContent = attachment?.data;
-      const contentType = attachment?.contentType || "text/plain";
-
-      console.log(
-        `document metadata - attachment: ${attachment} - textContent: ${textContent} - contentType: ${contentType}`
-      );
-
-      if (!textContent || !contentType) {
-        console.warn("Missing data or contentType");
-        return;
-      }
-
-      //   const response = await axios.post("/api/analyzeDocument", {
-      //     documents: [
-      //       {
-      //         content_type: contentType,
-      //         base64_content: textContent,
-      //       },
-      //     ],
-      //   });
-
       const response = await axios.post("/api/analyzeDocument", {
         document: doc,
       });
 
       console.log("Analysis result:", response.data);
+
+      dispatch(
+        addAnalysis({
+          documentId: doc.id,
+          result: response.data.analysis,
+        })
+      );
+
       alert("Document analyzed successfully.");
     } catch (error: any) {
       console.error("Failed to analyze document:", error.message);

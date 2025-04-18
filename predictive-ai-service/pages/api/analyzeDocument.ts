@@ -64,6 +64,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             { role: "user", content },
           ];
 
+      console.log("[Document Type]", contentType);
+      console.log("[Model Messages]", messages);
+
       // Send the model
       const response = await client.path("/chat/completions").post({
         body: {
