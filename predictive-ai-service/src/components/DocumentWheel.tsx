@@ -48,6 +48,9 @@ export const DocumentWheel: React.FC = () => {
       //     ],
       //   });
 
+      console.log("doc", doc);
+      console.log("doc string", JSON.stringify(doc));
+
       const response = await axios.post("/api/analyzeDocument", {
         documents: [doc],
       });
