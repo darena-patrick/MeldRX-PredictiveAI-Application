@@ -37,8 +37,14 @@ export const DocumentWheel: React.FC = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ document: doc, token }),
+        body: JSON.stringify({ document, token }),
       });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Error:", text);
+        throw new Error("Failed to analyze document");
+      }
 
       const result = await response.json();
 
