@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import axios from "axios";
 import { RootState } from "@/app/redux/store";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
@@ -26,29 +25,33 @@ export const DocumentWheel: React.FC = () => {
     (state: RootState) => state.documents.documents
   );
   const dispatch = useDispatch();
+  const token = useSelector((state: RootState) => state.auth.token);
 
   const handleAnalyze = async (doc: DocumentReference) => {
     try {
       console.log("doc", doc);
       console.log("doc string", JSON.stringify(doc));
 
-      const response = await axios.post("/api/analyzeDocument", {
-        document: doc,
+      const response = await fetch("/api/analyzeDocument", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ document: doc, token }),
       });
 
-      console.log("Analysis result:", response.data);
+      const result = await response.json();
+
+      console.log("Analysis result:", result);
 
       dispatch(
         addAnalysis({
           documentId: doc.id,
-          result: response.data.analysis,
+          result,
         })
       );
-
-      alert("Document analyzed successfully.");
-    } catch (error: any) {
-      console.error("Failed to analyze document:", error.message);
-      alert("Analysis failed. Check console.");
+    } catch (error) {
+      console.error("Failed to analyze document:", error);
     }
   };
 
@@ -70,15 +73,13 @@ export const DocumentWheel: React.FC = () => {
               className="card w-80 bg-base-100 shadow-xl shrink-0"
             >
               <div className="card-body space-y-2">
-                {isImage &&
-                  attachment?.contentType?.startsWith("image/") &&
-                  attachment.url && (
-                    <img
-                      src={attachment.url}
-                      alt="Medical image"
-                      className="w-full h-40 object-cover rounded-lg"
-                    />
-                  )}
+                {isImage && (
+                  <img
+                    src={attachment.url}
+                    alt="Medical image"
+                    className="w-full h-40 object-cover rounded-lg"
+                  />
+                )}
                 <h2 className="card-title">
                   {doc.type?.text || attachment?.contentType || "Unknown Type"}
                 </h2>
