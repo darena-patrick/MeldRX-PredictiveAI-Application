@@ -24,6 +24,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const documentContent = document.content?.[0]?.attachment;
       const { contentType, data, url } = documentContent || {};
 
+      if (!token) {
+        return res.status(400).json({ token: "Missing token" });
+      }
+
       if (!contentType) {
         return res.status(400).json({ message: "Missing attachment contentType" });
       }

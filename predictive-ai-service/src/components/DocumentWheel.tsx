@@ -17,10 +17,10 @@ type DocumentReference = {
     attachment?: {
       data?: string;
       contentType?: string;
+      url?: string;
     };
   }>;
 };
-
 export const DocumentWheel: React.FC = () => {
   const documents = useSelector(
     (state: RootState) => state.documents.documents
@@ -59,28 +59,45 @@ export const DocumentWheel: React.FC = () => {
   return (
     <div className="overflow-x-auto py-4">
       <div className="flex space-x-4">
-        {documents.map((doc: DocumentReference, index: number) => (
-          <div
-            key={doc.id || index}
-            className="card w-80 bg-base-100 shadow-xl shrink-0"
-          >
-            <div className="card-body">
-              <h2 className="card-title">{doc.type?.text || "Unknown Type"}</h2>
-              <p className="text-sm text-gray-500">
-                Date:{" "}
-                {doc.date ? new Date(doc.date).toLocaleDateString() : "N/A"}
-              </p>
-              <div className="card-actions justify-end">
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => handleAnalyze(doc)}
-                >
-                  Analyze
-                </button>
+        {documents.map((doc: DocumentReference, index: number) => {
+          const attachment = doc.content?.[0]?.attachment;
+          const isImage =
+            attachment?.contentType?.startsWith("image/") && attachment.url;
+
+          return (
+            <div
+              key={doc.id || index}
+              className="card w-80 bg-base-100 shadow-xl shrink-0"
+            >
+              <div className="card-body space-y-2">
+                {isImage &&
+                  attachment?.contentType?.startsWith("image/") &&
+                  attachment.url && (
+                    <img
+                      src={attachment.url}
+                      alt="Medical image"
+                      className="w-full h-40 object-cover rounded-lg"
+                    />
+                  )}
+                <h2 className="card-title">
+                  {doc.type?.text || attachment?.contentType || "Unknown Type"}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Date:{" "}
+                  {doc.date ? new Date(doc.date).toLocaleDateString() : "N/A"}
+                </p>
+                <div className="card-actions justify-end">
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => handleAnalyze(doc)}
+                  >
+                    Analyze
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
