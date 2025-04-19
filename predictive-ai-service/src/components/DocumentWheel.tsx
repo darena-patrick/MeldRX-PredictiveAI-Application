@@ -5,6 +5,8 @@ import { RootState } from "@/app/redux/store";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import { addAnalysis } from "@/app/redux/analysisSlice";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import AnalysisPDF from "./AnalysisPDF";
 
 type DocumentReference = {
   id: string;
@@ -31,6 +33,18 @@ export const DocumentWheel: React.FC = () => {
     Record<string, string>
   >({});
   const [error, setError] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [activeDocUrl, setActiveDocUrl] = useState<string | null>(null);
+
+  const openModal = (url: string) => {
+    setActiveDocUrl(url);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setActiveDocUrl(null);
+  };
 
   const handleAnalyze = async (doc: DocumentReference) => {
     setLoadingDocId(doc.id);
@@ -124,15 +138,56 @@ export const DocumentWheel: React.FC = () => {
                 )}
 
                 {analysis && (
-                  <div className="bg-base-200 p-2 rounded text-sm text-left whitespace-pre-wrap max-h-40 overflow-y-auto">
-                    {analysis}
-                  </div>
+                  <>
+                    <div className="bg-base-200 p-2 rounded text-sm text-left whitespace-pre-wrap max-h-40 overflow-y-auto">
+                      {analysis}
+                    </div>
+
+                    <div className="flex justify-end gap-2 mt-2">
+                      <PDFDownloadLink
+                        document={<AnalysisPDF content={analysis} />}
+                        fileName={`analysis-${doc.id}.pdf`}
+                        className="btn btn-sm btn-outline"
+                      >
+                        Download PDF
+                      </PDFDownloadLink>
+
+                      {attachment?.url && (
+                        <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => openModal(attachment.url!)}
+                        >
+                          View Document
+                        </button>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {showModal && activeDocUrl && (
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-4xl">
+            <h3 className="font-bold text-lg mb-2">Original Document</h3>
+            <div className="max-h-[70vh] overflow-y-auto">
+              <iframe
+                src={activeDocUrl}
+                className="w-full h-[60vh] border rounded"
+                title="Document Preview"
+              />
+            </div>
+            <div className="modal-action">
+              <button className="btn" onClick={closeModal}>
+                Close
+              </button>
+            </div>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 };

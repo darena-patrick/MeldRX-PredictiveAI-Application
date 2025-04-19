@@ -2,8 +2,6 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { AzureKeyCredential } from "@azure/core-auth";
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 
-
-// Optional: 60 seconds timeout for long image model calls
 const IMAGE_TIMEOUT_MS = 60000;
 const MAX_TEXT_LENGTH = 12000; // ~8k tokens safe
 
@@ -35,7 +33,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const client = ModelClient(endpoint, new AzureKeyCredential(githubToken));
 
-    // Get content (text or base64 image)
     let content: string | null = null;
     if (data) {
       content = Buffer.from(data, "base64").toString("utf-8");
@@ -56,11 +53,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: "No content data or url found" });
     }
 
-    // Detect if image or text
     const isImage = contentType.startsWith("image/");
+    let textInput: string | null = null;
 
-    // Handle token truncation for long text
-    const textInput = !isImage ? content?.slice(0, MAX_TEXT_LENGTH) : null;
+    if (!isImage) {
+      if (!content || typeof content !== "string") {
+        return res.status(400).json({ message: "Text document content could not be read" });
+      }
+
+      if (content.length > MAX_TEXT_LENGTH) {
+        console.warn("Truncating large text document to avoid token limit");
+      }
+
+      textInput = content.slice(0, MAX_TEXT_LENGTH);
+    }
+
+    const textWarning = textInput && content.length > MAX_TEXT_LENGTH
+      ? "\n[Note: This document was truncated due to size.]"
+      : "";
 
     const messages = isImage
       ? [
@@ -75,11 +85,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ]
       : [
           { role: "system", content: "You are a helpful assistant that summarizes and analyzes clinical notes." },
-          { role: "user", content: textInput },
+          { role: "user", content: textInput + textWarning },
         ];
-
-    console.log("[Document Type]", contentType);
-    console.log("[Model Messages]", messages);
 
     const requestBody = {
       model: modelName,
@@ -87,21 +94,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       max_tokens: 1500,
       temperature: 0.5,
       top_p: 1.0,
-      // stream: true, // Enable this if frontend supports streaming
     };
 
     const fetchModelResponse = () =>
       client.path("/chat/completions").post({ body: requestBody });
 
-    // Image requests may hang, so add a timeout wrapper
-    const modelResponse = isImage
-  ? (await Promise.race([
-      fetchModelResponse(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Image analysis timed out")), IMAGE_TIMEOUT_MS)
-      ),
-    ])) as any
-  : await fetchModelResponse();
+    let modelResponse: any;
+
+    if (isImage) {
+      try {
+        const result = await Promise.race([
+          fetchModelResponse(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("ImageAnalysisTimeout")), IMAGE_TIMEOUT_MS)
+          ),
+        ]);
+        modelResponse = result as any;
+      } catch (err) {
+        if (err instanceof Error && err.message === "ImageAnalysisTimeout") {
+          return res.status(408).json({ message: "Image analysis timed out" });
+        }
+        throw err;
+      }
+    } else {
+      modelResponse = await fetchModelResponse();
+    }
 
     if (isUnexpected(modelResponse)) {
       throw modelResponse.body.error;
@@ -110,11 +127,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const result = modelResponse.body.choices?.[0]?.message?.content;
     return res.status(200).json({ analysis: result });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Document analysis error:", error);
     return res.status(500).json({
       message: "Failed to analyze the document",
-      error: error.message,
+      error: message,
     });
   }
 }
