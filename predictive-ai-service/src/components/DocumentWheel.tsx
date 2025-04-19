@@ -31,13 +31,14 @@ export const DocumentWheel: React.FC = () => {
     try {
       console.log("doc", doc);
       console.log("doc string", JSON.stringify(doc));
+      console.log("token", token);
 
       const response = await fetch("/api/analyzeDocument", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ document, token }),
+        body: JSON.stringify({ document: doc, token }),
       });
 
       if (!response.ok) {
