@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { RootState } from "@/app/redux/store";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
@@ -26,8 +26,16 @@ export const DocumentWheel: React.FC = () => {
   );
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.token);
+  const [loadingDocId, setLoadingDocId] = useState<string | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<
+    Record<string, string>
+  >({});
+  const [error, setError] = useState<string | null>(null);
 
   const handleAnalyze = async (doc: DocumentReference) => {
+    setLoadingDocId(doc.id);
+    setError(null);
+
     try {
       console.log("doc", doc);
       console.log("doc string", JSON.stringify(doc));
@@ -43,22 +51,20 @@ export const DocumentWheel: React.FC = () => {
 
       if (!response.ok) {
         const text = await response.text();
-        console.error("Error:", text);
-        throw new Error("Failed to analyze document");
+        throw new Error(`Error: ${text}`);
       }
 
       const result = await response.json();
 
       console.log("Analysis result:", result);
 
-      dispatch(
-        addAnalysis({
-          documentId: doc.id,
-          result,
-        })
-      );
-    } catch (error) {
-      console.error("Failed to analyze document:", error);
+      dispatch(addAnalysis({ documentId: doc.id, result }));
+      setAnalysisResults((prev) => ({ ...prev, [doc.id]: result.analysis }));
+    } catch (err: any) {
+      console.error("Failed to analyze document:", err);
+      setError(`Failed: ${err.message}`);
+    } finally {
+      setLoadingDocId(null);
     }
   };
 
@@ -68,15 +74,22 @@ export const DocumentWheel: React.FC = () => {
 
   return (
     <div className="overflow-x-auto py-4">
+      {error && (
+        <div className="alert alert-error mb-4">
+          <span>{error}</span>
+        </div>
+      )}
+
       <div className="flex space-x-4">
-        {documents.map((doc: DocumentReference, index: number) => {
+        {documents.map((doc) => {
           const attachment = doc.content?.[0]?.attachment;
           const isImage =
             attachment?.contentType?.startsWith("image/") && attachment.url;
+          const analysis = analysisResults[doc.id];
 
           return (
             <div
-              key={doc.id || index}
+              key={doc.id}
               className="card w-80 bg-base-100 shadow-xl shrink-0"
             >
               <div className="card-body space-y-2">
@@ -94,14 +107,27 @@ export const DocumentWheel: React.FC = () => {
                   Date:{" "}
                   {doc.date ? new Date(doc.date).toLocaleDateString() : "N/A"}
                 </p>
-                <div className="card-actions justify-end">
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => handleAnalyze(doc)}
-                  >
-                    Analyze
-                  </button>
-                </div>
+
+                {loadingDocId === doc.id ? (
+                  <div className="flex justify-center my-2">
+                    <span className="loading loading-spinner loading-sm text-primary"></span>
+                  </div>
+                ) : (
+                  <div className="card-actions justify-end">
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => handleAnalyze(doc)}
+                    >
+                      Analyze
+                    </button>
+                  </div>
+                )}
+
+                {analysis && (
+                  <div className="bg-base-200 p-2 rounded text-sm text-left whitespace-pre-wrap max-h-40 overflow-y-auto">
+                    {analysis}
+                  </div>
+                )}
               </div>
             </div>
           );
