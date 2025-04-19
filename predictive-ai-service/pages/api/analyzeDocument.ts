@@ -11,10 +11,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const endpoint = "https://models.github.ai/inference";
     const modelName = "meta/Llama-3.2-11B-Vision-Instruct";
 
-    const azureToken = process.env.GITHUB_azureToken;
-
-    const client = ModelClient(endpoint, new AzureKeyCredential(azureToken!));
-
     const { document, token: fhirToken } = req.body;
 
     if (!document || typeof document !== "object" || document.resourceType !== "DocumentReference") {
@@ -25,7 +21,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const documentContent = document.content?.[0]?.attachment;
       const { contentType, data, url } = documentContent || {};
 
-      if (!azureToken) {
+      const githubToken = process.env.GITHUB_TOKEN;
+
+      const client = ModelClient(endpoint, new AzureKeyCredential(githubToken!));
+
+      if (!githubToken) {
         return res.status(400).json({ message: "Missing model access token" });
       }
 
