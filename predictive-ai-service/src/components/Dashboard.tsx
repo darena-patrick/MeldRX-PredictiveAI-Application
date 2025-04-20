@@ -22,7 +22,7 @@ import {
   RadialBarChart,
   RadialBar,
 } from "recharts";
-import { fetchGeminiResponse } from "@/utils/serverAPICalls";
+import { fetchAIResponse } from "@/utils/serverAPICalls";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Document, Page, Text, StyleSheet, View } from "@react-pdf/renderer";
 import { setDocuments } from "@/app/redux/documentSlice";
@@ -335,7 +335,7 @@ export default function Dashboard() {
         provide a raw response.
       `;
 
-      const aiResponse = await fetchGeminiResponse(prompt);
+      const aiResponse = await fetchAIResponse(prompt);
 
       // console.log("Raw AI response (Condition):", aiResponse);
       setConditionInsights(aiResponse);
@@ -359,7 +359,7 @@ export default function Dashboard() {
         provide a raw response.
       `;
 
-      const aiResponse = await fetchGeminiResponse(prompt);
+      const aiResponse = await fetchAIResponse(prompt);
 
       // console.log("Raw AI response (Observation):", aiResponse);
       setObservationInsights(aiResponse);
@@ -415,7 +415,7 @@ export default function Dashboard() {
           If any of the information is unavailable or uncertain, the model should provide a best estimate but should not return null for the above parameters.
         `;
 
-        const aiResponse = await fetchGeminiResponse(prompt);
+        const aiResponse = await fetchAIResponse(prompt);
 
         // console.log("Final AI response (Combined):", aiResponse);
 
