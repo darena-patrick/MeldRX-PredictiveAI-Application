@@ -413,6 +413,10 @@ export default function Dashboard() {
     while (attempt < maxRetries) {
       try {
         const prompt = `
+          Please respond ONLY with valid JSON in a single code block, like:
+          \`\`\`json
+          { "riskScore": 70, ... }
+        
           Combine the following raw responses for conditions and observations:
   
           Condition response: ${conditions}
@@ -442,10 +446,18 @@ export default function Dashboard() {
         // console.log("Final AI response (Combined):", aiResponse);
 
         if (aiResponse) {
-          const cleanedResponse = aiResponse
-            .replace(/```json/g, "")
-            .replace(/```/g, "")
-            .trim();
+          const extractJSON = (text: string): string | null => {
+            const match =
+              text.match(/```json\s*([\s\S]*?)\s*```/i) ||
+              text.match(/{[\s\S]*}/);
+            return match ? match[1] || match[0] : null;
+          };
+
+          const cleanedResponse = extractJSON(aiResponse);
+
+          if (!cleanedResponse)
+            throw new Error("No valid JSON found in AI response");
+
           const parsedResponse = JSON.parse(cleanedResponse);
 
           setRiskScore(parsedResponse.riskScore || 50);
