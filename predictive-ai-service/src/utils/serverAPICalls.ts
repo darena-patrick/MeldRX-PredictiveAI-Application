@@ -9,7 +9,6 @@ export const fetchAIResponse = async (prompt: string) => {
     }
 
     const data = await res.json();
-
     return data.insights;
   } catch (error: any) {
     const errorMessage = `An error occurred in the fetchAIResponse function: ${error.message}`;

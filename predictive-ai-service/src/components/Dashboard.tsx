@@ -158,6 +158,7 @@ export default function Dashboard() {
     (state: RootState) => state.observations.observations
   );
   const [loading, setLoading] = useState(true);
+  const [aiLoading, setAiLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [riskScore, setRiskScore] = useState<number>(50);
   const [conditionTrends, setConditionTrends] = useState<any[]>([]);
@@ -169,6 +170,21 @@ export default function Dashboard() {
   const [accuracy, setAccuracy] = useState<number>();
   const [accuracyExplanation, setAccuracyExplanation] = useState<string>("");
   const [riskScoreExplanation, setRiskScoreExplanation] = useState<string>("");
+  const [aiLoadingSections, setAiLoadingSections] = useState({
+    risk: true,
+    trends: true,
+    recommendations: true,
+    preventive: true,
+    summary: true,
+    accuracy: true,
+  });
+
+  const setSectionLoading = (
+    section: keyof typeof aiLoadingSections,
+    isLoading: boolean
+  ) => {
+    setAiLoadingSections((prev) => ({ ...prev, [section]: isLoading }));
+  };
 
   useEffect(() => {
     if (!token || !patientId) return;
@@ -326,6 +342,7 @@ export default function Dashboard() {
 
   const fetchConditionAIInsights = async (conditions: any[]) => {
     try {
+      setAiLoading(true);
       const conditionNames = conditions.map(
         (c) => c.code?.coding?.[0]?.display || "Unknown"
       );
@@ -344,11 +361,14 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Error fetching Condition AI insights:", error);
       return null;
+    } finally {
+      setAiLoading(false);
     }
   };
 
   const fetchObservationAIInsights = async (observations: any[]) => {
     try {
+      setAiLoading(true);
       const observationNames = observations.map((o) => {
         const categoryCode = o.category?.[0]?.coding?.[0]?.code || "Unknown";
         return categoryCode;
@@ -369,6 +389,8 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Error fetching Observation AI insights:", error);
       return null;
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -427,17 +449,24 @@ export default function Dashboard() {
           const parsedResponse = JSON.parse(cleanedResponse);
 
           setRiskScore(parsedResponse.riskScore || 50);
+
           setRiskScoreExplanation(
             parsedResponse.riskScoreExplanation || "No explanation provided."
           );
+          setSectionLoading("risk", true);
           setAccuracy(parsedResponse.accuracy || 0.5);
           setAccuracyExplanation(
             parsedResponse.accuracyExplanation || "No explanation provided."
           );
+          setSectionLoading("accuracy", true);
           setRecommendations(parsedResponse.recommendedTreatments || []);
+          setSectionLoading("recommendations", true);
           setNormalResponse(parsedResponse.normalResponse);
+          setSectionLoading("summary", true);
           setPreventiveMeasures(parsedResponse.preventiveMeasures || []);
+          setSectionLoading("preventive", true);
           setConditionTrends(parsedResponse.conditionTrends || []);
+          setSectionLoading("trends", true);
 
           return parsedResponse;
         } else {
@@ -481,9 +510,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      {loading ? (
-        <p>Loading conditions...</p>
-      ) : error ? (
+      {error ? (
         <p className="text-red-500">Error: {error}</p>
       ) : conditions.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -528,47 +555,58 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* Risk Score Gauge Chart */}
-          {riskScore !== null && (
-            <div className="card bg-base-200 p-4 shadow-lg">
-              <h3 className="text-lg font-bold">Risk Score</h3>
-              <p className="text-xl font-semibold mb-4">{riskScore}%</p>{" "}
-              {/* Display risk score above the gauge */}
-              <ResponsiveContainer width="100%" height={200}>
-                <RadialBarChart
-                  cx="50%"
-                  cy="50%"
-                  innerRadius="60%"
-                  outerRadius="100%"
-                  barSize={10}
-                  data={[{ value: riskScore }]}
-                >
-                  <RadialBar
-                    background
-                    dataKey="value"
-                    fill={
-                      riskScore > 70
-                        ? "red"
-                        : riskScore > 40
-                        ? "orange"
-                        : "green"
-                    }
-                  />
-                </RadialBarChart>
-              </ResponsiveContainer>
-              <p className="text-sm">{riskScoreExplanation}</p>
-            </div>
-          )}
+          {/* Risk Score */}
+          <div className="card bg-base-200 p-4 shadow-lg">
+            <h3 className="text-lg font-bold">Risk Score</h3>
+            {aiLoadingSections.risk ? (
+              <div className="flex items-center justify-center h-48">
+                <span className="loading loading-spinner loading-lg text-primary"></span>
+              </div>
+            ) : riskScore !== null ? (
+              <>
+                <p className="text-xl font-semibold mb-4">{riskScore}%</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <RadialBarChart
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="60%"
+                    outerRadius="100%"
+                    barSize={10}
+                    data={[{ value: riskScore }]}
+                  >
+                    <RadialBar
+                      background
+                      dataKey="value"
+                      fill={
+                        riskScore > 70
+                          ? "red"
+                          : riskScore > 40
+                          ? "orange"
+                          : "green"
+                      }
+                    />
+                  </RadialBarChart>
+                </ResponsiveContainer>
+                <p className="text-sm">{riskScoreExplanation}</p>
+              </>
+            ) : (
+              <p>No risk score available.</p>
+            )}
+          </div>
 
-          {/* Condition Trends Chart */}
-          {conditionTrends && conditionTrends.length > 0 && (
-            <div className="card bg-base-200 p-4 shadow-lg">
-              <h3 className="text-lg font-bold">Condition Trends Over Time</h3>
+          {/* Condition Trends */}
+          <div className="card bg-base-200 p-4 shadow-lg">
+            <h3 className="text-lg font-bold">Condition Trends Over Time</h3>
+            {aiLoadingSections.trends ? (
+              <div className="flex items-center justify-center h-48">
+                <span className="loading loading-spinner loading-lg text-primary"></span>
+              </div>
+            ) : conditionTrends && conditionTrends.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart
                   data={conditionTrends.map((trend, index) => ({
-                    date: `Date ${index + 1}`, // Simulating dates for now
-                    severity: trend.length % 100, // Using string length as a mock severity score
+                    date: `Date ${index + 1}`,
+                    severity: trend.length % 100,
                   }))}
                 >
                   <XAxis dataKey="date" />
@@ -577,13 +615,19 @@ export default function Dashboard() {
                   <Line type="monotone" dataKey="severity" stroke="#8884d8" />
                 </LineChart>
               </ResponsiveContainer>
-            </div>
-          )}
+            ) : (
+              <p>No trends found.</p>
+            )}
+          </div>
 
-          {/* AI Recommendations */}
+          {/* Recommendations */}
           <div className="card bg-base-200 p-4 shadow-lg">
             <h3 className="text-lg font-bold">Recommended Actions</h3>
-            {recommendations && recommendations.length > 0 ? (
+            {aiLoadingSections.recommendations ? (
+              <div className="flex items-center justify-center h-24">
+                <span className="loading loading-spinner text-primary"></span>
+              </div>
+            ) : recommendations && recommendations.length > 0 ? (
               <ul className="list-disc list-inside">
                 {recommendations.map((rec, index) => (
                   <li key={index}>{rec}</li>
@@ -595,61 +639,85 @@ export default function Dashboard() {
           </div>
 
           {/* Preventive Measures */}
-          {preventiveMeasures && preventiveMeasures.length > 0 && (
-            <div className="card bg-base-200 p-4 shadow-lg">
-              <h3 className="text-lg font-bold">Preventive Measures</h3>
+          <div className="card bg-base-200 p-4 shadow-lg">
+            <h3 className="text-lg font-bold">Preventive Measures</h3>
+            {aiLoadingSections.preventive ? (
+              <div className="flex items-center justify-center h-24">
+                <span className="loading loading-spinner text-primary"></span>
+              </div>
+            ) : preventiveMeasures && preventiveMeasures.length > 0 ? (
               <ul className="list-disc list-inside">
                 {preventiveMeasures.map((measure, index) => (
                   <li key={index}>{measure}</li>
                 ))}
               </ul>
-            </div>
-          )}
+            ) : (
+              <p>No preventive measures available.</p>
+            )}
+          </div>
 
-          {/* AI Raw Response */}
-          {normalResponse && (
-            <div className="card bg-base-200 p-4 shadow-lg">
-              <h3 className="text-lg font-bold">Quick Summary</h3>
-              <p className="text-sm">{normalResponse}</p>
-            </div>
-          )}
-
-          {/* Overall AI Accuracy */}
-          {accuracy !== null && accuracy !== undefined && (
-            <div className="card bg-base-200 p-4 shadow-lg">
-              <h3 className="text-lg font-bold">Overall AI Accuracy</h3>
-              <p className="text-xl">{(accuracy * 100).toFixed(2)}%</p>
-              <p className="text-sm">{accuracyExplanation}</p>
-              <div className="mt-4">
-                <PDFDownloadLink
-                  document={
-                    <AIResponsePDF
-                      riskScore={riskScore}
-                      riskScoreExplanation={riskScoreExplanation}
-                      recommendedTreatments={recommendations}
-                      conditionTrends={conditionTrends}
-                      preventiveMeasures={preventiveMeasures}
-                      normalResponse={normalResponse}
-                      accuracy={accuracy}
-                      accuracyExplanation={accuracyExplanation}
-                    />
-                  }
-                  fileName="AI_Response.pdf"
-                >
-                  {({ loading }) =>
-                    loading ? (
-                      <button className="btn btn-primary">
-                        Generating PDF...
-                      </button>
-                    ) : (
-                      <button className="btn btn-primary">Download PDF</button>
-                    )
-                  }
-                </PDFDownloadLink>
+          {/* AI Summary */}
+          <div className="card bg-base-200 p-4 shadow-lg">
+            <h3 className="text-lg font-bold">Quick Summary</h3>
+            {aiLoadingSections.summary ? (
+              <div className="flex items-center justify-center h-24">
+                <span className="loading loading-spinner text-primary"></span>
               </div>
-            </div>
-          )}
+            ) : normalResponse ? (
+              <p className="text-sm">{normalResponse}</p>
+            ) : (
+              <p>No summary available.</p>
+            )}
+          </div>
+
+          {/* AI Accuracy */}
+          <div className="card bg-base-200 p-4 shadow-lg">
+            <h3 className="text-lg font-bold">Overall AI Accuracy</h3>
+            {aiLoadingSections.accuracy ? (
+              <div className="flex items-center justify-center h-24">
+                <span className="loading loading-spinner text-primary"></span>
+              </div>
+            ) : accuracy !== null && accuracy !== undefined ? (
+              <>
+                <p className="text-xl">{(accuracy * 100).toFixed(2)}%</p>
+                <p className="text-sm">{accuracyExplanation}</p>
+                <div className="mt-4">
+                  <PDFDownloadLink
+                    document={
+                      <AIResponsePDF
+                        riskScore={riskScore}
+                        riskScoreExplanation={riskScoreExplanation}
+                        recommendedTreatments={recommendations}
+                        conditionTrends={conditionTrends}
+                        preventiveMeasures={preventiveMeasures}
+                        normalResponse={normalResponse}
+                        accuracy={accuracy}
+                        accuracyExplanation={accuracyExplanation}
+                      />
+                    }
+                    fileName="AI_Response.pdf"
+                  >
+                    {({ loading }) =>
+                      loading ? (
+                        <button className="btn btn-primary">
+                          Generating PDF...
+                        </button>
+                      ) : (
+                        <button className="btn btn-primary">
+                          Download PDF
+                        </button>
+                      )
+                    }
+                  </PDFDownloadLink>
+                </div>
+              </>
+            ) : (
+              <p>No accuracy score available.</p>
+            )}
+          </div>
         </div>
+      ) : loading ? (
+        <p>Loading documents and conditions...</p>
       ) : (
         <p>No conditions found.</p>
       )}
