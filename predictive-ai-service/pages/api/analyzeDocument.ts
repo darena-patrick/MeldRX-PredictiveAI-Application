@@ -13,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const endpoint = "https://models.github.ai/inference";
   const modelName = "meta/Llama-3.2-11B-Vision-Instruct";
   const githubToken = process.env.GITHUB_TOKEN;
-  const { document, token: fhirToken } = req.body;
+  const { document, token: fhirToken, templatedQuestions = [] } = req.body;
 
   if (!document || typeof document !== "object" || document.resourceType !== "DocumentReference") {
     return res.status(400).json({ message: "Invalid DocumentReference payload" });
@@ -72,6 +72,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ? "\n[Note: This document was truncated due to size.]"
       : "";
 
+      const userPrompt = templatedQuestions.length > 0
+    ? `Please answer the following questions based on the document:\n\n${templatedQuestions.join(
+      "\n"
+    )}\n\nDocument content:\n${textInput}${textWarning}`
+  : textInput + textWarning;
+
     const messages = isImage
       ? [
           { role: "system", content: "You are a helpful assistant that describes medical images." },
@@ -85,7 +91,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ]
       : [
           { role: "system", content: "You are a helpful assistant that summarizes and analyzes clinical notes." },
-          { role: "user", content: textInput + textWarning },
+          { role: "user", content: userPrompt },
         ];
 
     const requestBody = {

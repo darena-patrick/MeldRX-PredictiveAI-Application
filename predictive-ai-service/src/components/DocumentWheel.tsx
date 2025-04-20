@@ -35,6 +35,7 @@ export const DocumentWheel: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [activeDocUrl, setActiveDocUrl] = useState<string | null>(null);
+  const [templatedQuestions, setTemplatedQuestions] = useState<string[]>([]);
 
   const openModal = (url: string) => {
     setActiveDocUrl(url);
@@ -44,6 +45,26 @@ export const DocumentWheel: React.FC = () => {
   const closeModal = () => {
     setShowModal(false);
     setActiveDocUrl(null);
+  };
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+
+      if (!Array.isArray(parsed))
+        throw new Error("Invalid format: JSON must be an array of strings");
+
+      setTemplatedQuestions(parsed);
+      alert("Templated questions loaded!");
+    } catch (e) {
+      alert("Failed to load questions: " + (e as Error).message);
+    }
   };
 
   const handleAnalyze = async (doc: DocumentReference) => {
@@ -60,7 +81,7 @@ export const DocumentWheel: React.FC = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ document: doc, token }),
+        body: JSON.stringify({ document: doc, token, templatedQuestions }),
       });
 
       if (!response.ok) {
@@ -87,7 +108,24 @@ export const DocumentWheel: React.FC = () => {
   }
 
   return (
-    <div className="overflow-x-auto py-4">
+    <div className="overflow-x-auto py-4 space-y-4">
+      <div className="flex gap-4 items-center">
+        <label className="btn btn-outline btn-sm">
+          📥 Import Questions
+          <input
+            type="file"
+            accept=".json"
+            hidden
+            onChange={handleFileUpload}
+          />
+        </label>
+        {templatedQuestions.length > 0 && (
+          <span className="text-success text-sm">
+            ✓ {templatedQuestions.length} questions loaded
+          </span>
+        )}
+      </div>
+
       {error && (
         <div className="alert alert-error mb-4">
           <span>{error}</span>
@@ -142,7 +180,6 @@ export const DocumentWheel: React.FC = () => {
                     <div className="bg-base-200 p-2 rounded text-sm text-left whitespace-pre-wrap max-h-40 overflow-y-auto">
                       {analysis}
                     </div>
-
                     <div className="flex justify-end gap-2 mt-2">
                       <PDFDownloadLink
                         document={<AnalysisPDF content={analysis} />}
@@ -151,7 +188,6 @@ export const DocumentWheel: React.FC = () => {
                       >
                         Download PDF
                       </PDFDownloadLink>
-
                       {attachment?.url && (
                         <button
                           className="btn btn-sm btn-outline"
