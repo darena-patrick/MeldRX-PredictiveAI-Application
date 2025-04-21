@@ -36,6 +36,10 @@ export const DocumentWheel: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [activeDocUrl, setActiveDocUrl] = useState<string | null>(null);
   const [templatedQuestions, setTemplatedQuestions] = useState<string[]>([]);
+  const [docContent, setDocContent] = useState<string | null>(null);
+  const [docContentType, setDocContentType] = useState<string | null>(null);
+  const [docLoading, setDocLoading] = useState(false);
+  const [showContentModal, setShowContentModal] = useState(false);
 
   const openModal = (url: string) => {
     setActiveDocUrl(url);
@@ -45,6 +49,34 @@ export const DocumentWheel: React.FC = () => {
   const closeModal = () => {
     setShowModal(false);
     setActiveDocUrl(null);
+  };
+
+  const fetchAndShowDocument = async (doc: DocumentReference) => {
+    setDocLoading(true);
+    setError(null);
+    setDocContent(null);
+    setDocContentType(null);
+
+    try {
+      const res = await fetch("/api/getDocumentContent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ document: doc, token }),
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+
+      const { content, contentType } = await res.json();
+      setDocContent(content);
+      setDocContentType(contentType);
+      setShowContentModal(true);
+    } catch (err: any) {
+      setError(`Error fetching document: ${err.message}`);
+    } finally {
+      setDocLoading(false);
+    }
   };
 
   const handleFileUpload = async (
@@ -167,6 +199,12 @@ export const DocumentWheel: React.FC = () => {
                 ) : (
                   <div className="card-actions justify-end">
                     <button
+                      className="btn btn-sm btn-outline"
+                      onClick={() => fetchAndShowDocument(doc)}
+                    >
+                      View Content
+                    </button>
+                    <button
                       className="btn btn-primary btn-sm"
                       onClick={() => handleAnalyze(doc)}
                     >
@@ -218,6 +256,33 @@ export const DocumentWheel: React.FC = () => {
             </div>
             <div className="modal-action">
               <button className="btn" onClick={closeModal}>
+                Close
+              </button>
+            </div>
+          </div>
+        </dialog>
+      )}
+
+      {showContentModal && docContent && (
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-4xl">
+            <h3 className="font-bold text-lg mb-2">Document Content</h3>
+            <div className="max-h-[70vh] overflow-y-auto">
+              {docContentType?.startsWith("image/") ? (
+                <img
+                  src={`data:${docContentType};base64,${docContent}`}
+                  alt="Document Image"
+                  className="w-full rounded"
+                />
+              ) : (
+                <pre className="text-sm whitespace-pre-wrap">{docContent}</pre>
+              )}
+            </div>
+            <div className="modal-action">
+              <button
+                className="btn"
+                onClick={() => setShowContentModal(false)}
+              >
                 Close
               </button>
             </div>
