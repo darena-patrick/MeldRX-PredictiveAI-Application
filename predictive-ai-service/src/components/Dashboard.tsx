@@ -465,20 +465,20 @@ export default function Dashboard() {
           setRiskScoreExplanation(
             parsedResponse.riskScoreExplanation || "No explanation provided."
           );
-          setSectionLoading("risk", true);
+          setSectionLoading("risk", false);
           setAccuracy(parsedResponse.accuracy || 0.5);
           setAccuracyExplanation(
             parsedResponse.accuracyExplanation || "No explanation provided."
           );
-          setSectionLoading("accuracy", true);
+          setSectionLoading("accuracy", false);
           setRecommendations(parsedResponse.recommendedTreatments || []);
-          setSectionLoading("recommendations", true);
+          setSectionLoading("recommendations", false);
           setNormalResponse(parsedResponse.normalResponse);
-          setSectionLoading("summary", true);
+          setSectionLoading("summary", false);
           setPreventiveMeasures(parsedResponse.preventiveMeasures || []);
-          setSectionLoading("preventive", true);
+          setSectionLoading("preventive", false);
           setConditionTrends(parsedResponse.conditionTrends || []);
-          setSectionLoading("trends", true);
+          setSectionLoading("trends", false);
 
           return parsedResponse;
         } else {
