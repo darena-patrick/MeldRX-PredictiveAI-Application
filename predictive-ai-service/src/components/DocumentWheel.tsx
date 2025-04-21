@@ -41,10 +41,10 @@ export const DocumentWheel: React.FC = () => {
   const [docLoading, setDocLoading] = useState(false);
   const [showContentModal, setShowContentModal] = useState(false);
 
-  const openModal = (url: string) => {
-    setActiveDocUrl(url);
-    setShowModal(true);
-  };
+  // const openModal = (url: string) => {
+  //   setActiveDocUrl(url);
+  //   setShowModal(true);
+  // };
 
   const closeModal = () => {
     setShowModal(false);
@@ -226,14 +226,6 @@ export const DocumentWheel: React.FC = () => {
                       >
                         Download PDF
                       </PDFDownloadLink>
-                      {attachment?.url && (
-                        <button
-                          className="btn btn-sm btn-outline"
-                          onClick={() => openModal(attachment.url!)}
-                        >
-                          View Document
-                        </button>
-                      )}
                     </div>
                   </>
                 )}
