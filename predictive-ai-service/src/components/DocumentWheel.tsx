@@ -268,36 +268,47 @@ export const DocumentWheel: React.FC = () => {
           <div className="modal-box max-w-4xl">
             <h3 className="font-bold text-lg mb-2">Document Content</h3>
             <div className="max-h-[70vh] overflow-y-auto">
-              {docContentType?.startsWith("image/") ? (
+              {/* If it's an image, render the image */}
+              {docContent.startsWith("data:image/") ? (
                 <img
-                  src={`data:${docContentType};base64,${docContent}`}
+                  src={docContent}
                   alt="Document Image"
                   className="w-full rounded"
-                  onError={(e) => console.error("Image failed to load", e)}
                 />
-              ) : docContentType === "application/xml" ||
-                docContentType === "text/xml" ? (
+              ) : docContentType?.includes("xml") ? (
+                // If it's XML, decode and parse it
                 <div className="text-sm whitespace-pre-wrap bg-base-200 p-2 rounded">
                   {(() => {
                     try {
-                      const decoded = atob(docContent);
+                      // If it was base64-encoded XML, decode it
+                      const base64Match = docContent.match(
+                        /^data:.*;base64,(.*)$/
+                      );
+                      const decoded = base64Match
+                        ? atob(base64Match[1])
+                        : docContent;
+
                       const parser = new DOMParser();
                       const xml = parser.parseFromString(
                         decoded,
                         "application/xml"
                       );
+
                       const paragraph = xml.querySelector("paragraph");
                       if (paragraph) {
                         return <p>{paragraph.textContent}</p>;
                       }
-                      // fallback: render full XML nicely
+
+                      // Fallback to show raw decoded XML nicely
                       return <pre>{decoded}</pre>;
                     } catch (e) {
-                      return <pre>{docContent}</pre>; // fallback
+                      // Fallback if XML parsing fails
+                      return <pre>{docContent}</pre>;
                     }
                   })()}
                 </div>
               ) : (
+                // Fallback for any other text
                 <pre className="text-sm whitespace-pre-wrap bg-base-200 p-2 rounded">
                   {docContent}
                 </pre>

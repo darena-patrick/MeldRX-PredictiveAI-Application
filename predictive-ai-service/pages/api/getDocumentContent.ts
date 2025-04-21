@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         content = `data:${contentType};base64,${Buffer.from(buffer).toString("base64")}`;
       }
 
-      throw new Error(`DEBUG: ${content}`);
+      // throw new Error(`DEBUG: ${content}`);
     }
 
     if (!content) return res.status(400).json({ message: "No content found" });
