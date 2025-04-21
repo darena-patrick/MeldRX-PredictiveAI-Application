@@ -1,5 +1,6 @@
 export const fetchAIResponse = async (prompt: string) => {
   try {
+    console.log('fetching with prompt', prompt);
     const res = await fetch(`/api/predict?prompt=${encodeURIComponent(prompt)}`);
 
     if (!res.ok) {
@@ -9,6 +10,7 @@ export const fetchAIResponse = async (prompt: string) => {
     }
 
     const data = await res.json();
+    console.log('AI response:', data);
     return data.insights;
   } catch (error: any) {
     const errorMessage = `An error occurred in the fetchAIResponse function: ${error.message}`;
