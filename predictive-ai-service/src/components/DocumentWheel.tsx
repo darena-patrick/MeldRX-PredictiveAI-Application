@@ -177,13 +177,13 @@ export const DocumentWheel: React.FC = () => {
               className="card w-80 bg-base-100 shadow-xl shrink-0"
             >
               <div className="card-body space-y-2">
-                {isImage && attachment && (
+                {/* {isImage && attachment && (
                   <img
                     src={attachment.url}
                     alt="Medical image"
                     className="w-full h-40 object-cover rounded-lg"
                   />
-                )}
+                )} */}
                 <h2 className="card-title">
                   {doc.type?.text || attachment?.contentType || "Unknown Type"}
                 </h2>
@@ -273,9 +273,34 @@ export const DocumentWheel: React.FC = () => {
                   src={`data:${docContentType};base64,${docContent}`}
                   alt="Document Image"
                   className="w-full rounded"
+                  onError={(e) => console.error("Image failed to load", e)}
                 />
+              ) : docContentType === "application/xml" ||
+                docContentType === "text/xml" ? (
+                <div className="text-sm whitespace-pre-wrap bg-base-200 p-2 rounded">
+                  {(() => {
+                    try {
+                      const decoded = atob(docContent);
+                      const parser = new DOMParser();
+                      const xml = parser.parseFromString(
+                        decoded,
+                        "application/xml"
+                      );
+                      const paragraph = xml.querySelector("paragraph");
+                      if (paragraph) {
+                        return <p>{paragraph.textContent}</p>;
+                      }
+                      // fallback: render full XML nicely
+                      return <pre>{decoded}</pre>;
+                    } catch (e) {
+                      return <pre>{docContent}</pre>; // fallback
+                    }
+                  })()}
+                </div>
               ) : (
-                <pre className="text-sm whitespace-pre-wrap">{docContent}</pre>
+                <pre className="text-sm whitespace-pre-wrap bg-base-200 p-2 rounded">
+                  {docContent}
+                </pre>
               )}
             </div>
             <div className="modal-action">
