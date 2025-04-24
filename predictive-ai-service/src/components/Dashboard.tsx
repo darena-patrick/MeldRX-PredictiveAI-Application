@@ -37,6 +37,7 @@ import { setProvenances } from "@/app/redux/patientDataSlicers/provenanceSlice";
 import { setDocuments } from "@/app/redux/patientDataSlicers/documentSlice";
 import { setObservations } from "@/app/redux/patientDataSlicers/observationsSlice";
 import { setConditions } from "@/app/redux/patientDataSlicers/conditionSlice";
+import { setCarePlans } from "@/app/redux/patientDataSlicers/carePlanSlice";
 
 const styles = StyleSheet.create({
   page: {
@@ -250,6 +251,14 @@ export default function Dashboard() {
             patientId,
             dispatch,
             setResourceAction: setCareTeams,
+          }),
+
+          fetchFHIRResource({
+            resourceType: "CarePlan",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setCarePlans,
           }),
 
           fetchFHIRResource({
