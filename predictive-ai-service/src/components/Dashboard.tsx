@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import axios from "axios";
+
 import { RootState } from "@/app/redux/store";
-import { setConditions } from "@/app/redux/conditionSlice";
-import { setObservations } from "@/app/redux/observationsSlice";
 import {
   PieChart,
   Pie,
@@ -25,7 +23,11 @@ import {
 import { fetchAIResponse } from "@/utils/serverAPICalls";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Document, Page, Text, StyleSheet, View } from "@react-pdf/renderer";
-import { setDocuments } from "@/app/redux/documentSlice";
+import {
+  fetchConditions,
+  fetchDocuments,
+  fetchObservations,
+} from "@/utils/fhirAPICalls";
 
 const styles = StyleSheet.create({
   page: {
@@ -187,157 +189,28 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (!token || !patientId) return;
-
-    const fetchDocuments = async () => {
-      try {
-        let allDocuments: any[] = [];
-        let nextUrl = `https://app.meldrx.com/api/fhir/${process.env.NEXT_PUBLIC_APP_ID}/DocumentReference?patient=${patientId}`;
-
-        while (nextUrl && allDocuments.length < 10) {
-          const bundleResponse = await axios.get(nextUrl, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          const documentResponses = await Promise.all(
-            bundleResponse.data.entry.map((entry: any) =>
-              axios.get(entry.fullUrl, {
-                headers: { Authorization: `Bearer ${token}` },
-              })
-            )
-          );
-
-          allDocuments = [
-            ...allDocuments,
-            ...documentResponses.map((res) => res.data),
-          ];
-
-          if (allDocuments.length >= 10) break;
-
-          nextUrl =
-            bundleResponse.data.link?.find(
-              (link: any) => link.relation === "next"
-            )?.url || null;
-        }
-
-        dispatch(setDocuments(allDocuments));
-        console.log("docs are", allDocuments);
-        console.log("docs are stringify", JSON.stringify(allDocuments));
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching documents:", error);
-        setError("Failed to fetch documents.");
-        setLoading(false);
-      }
-    };
-
-    fetchDocuments();
+    if (token && patientId) {
+      fetchDocuments(token, patientId, dispatch, setLoading, setError);
+    }
   }, [token, patientId, dispatch]);
 
   useEffect(() => {
-    if (!token || !patientId) return;
-
-    const fetchConditions = async () => {
-      try {
-        let allConditions: any[] = [];
-        let nextUrl = `https://app.meldrx.com/api/fhir/${process.env.NEXT_PUBLIC_APP_ID}/Condition?patient=${patientId}`;
-
-        while (nextUrl && allConditions.length < 6) {
-          const bundleResponse = await axios.get(nextUrl, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          const conditionResponses = await Promise.all(
-            bundleResponse.data.entry.map((entry: any) =>
-              axios.get(entry.fullUrl, {
-                headers: { Authorization: `Bearer ${token}` },
-              })
-            )
-          );
-
-          // Add conditions to the list, but stop after reaching 6
-          allConditions = [
-            ...allConditions,
-            ...conditionResponses.map((res) => res.data),
-          ];
-
-          // If 6 conditions are fetched, break the loop
-          if (allConditions.length >= 6) {
-            break;
-          }
-
-          // Update the nextUrl for pagination
-          nextUrl =
-            bundleResponse.data.link?.find(
-              (link: any) => link.relation === "next"
-            )?.url || null;
-        }
-
-        dispatch(setConditions(allConditions));
-        setLoading(false);
-
-        // Pass the first 6 conditions to the AI function
-        fetchConditionAIInsights(allConditions.slice(0, 6));
-      } catch (error) {
-        console.error("Error fetching conditions:", error);
-        setError("Failed to fetch conditions.");
-        setLoading(false);
-      }
-    };
-
-    fetchConditions();
+    if (token && patientId) {
+      fetchConditions(
+        token,
+        patientId,
+        dispatch,
+        setLoading,
+        setError,
+        fetchConditionAIInsights
+      );
+    }
   }, [token, patientId, dispatch]);
 
   useEffect(() => {
-    if (!token || !patientId) return;
-
-    const fetchObservations = async () => {
-      try {
-        let allObservations: any[] = [];
-        let nextUrl = `https://app.meldrx.com/api/fhir/${process.env.NEXT_PUBLIC_APP_ID}/Observation?patient=${patientId}`;
-
-        while (nextUrl && allObservations.length < 6) {
-          const response = await axios.get(nextUrl, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          // Fetch individual observation entries
-          const observationResponses = await Promise.all(
-            response.data.entry.map((entry: any) =>
-              axios.get(entry.fullUrl, {
-                headers: { Authorization: `Bearer ${token}` },
-              })
-            )
-          );
-
-          // Add observations to the list, but stop after reaching 6
-          allObservations = [
-            ...allObservations,
-            ...observationResponses.map((res) => res.data),
-          ];
-
-          // If 6 observations are fetched, break the loop
-          if (allObservations.length >= 6) {
-            break;
-          }
-
-          // Update the nextUrl for pagination
-          nextUrl = response.data.link?.find(
-            (link: any) => link.relation === "next"
-          )?.url;
-        }
-
-        // Dispatch the observations to the store
-        dispatch(setObservations(allObservations.slice(0, 6))); // Ensure only the first 6 are stored
-
-        // Pass the first 6 observations to the AI function
-        fetchObservationAIInsights(allObservations.slice(0, 6));
-      } catch (error) {
-        console.error("Error fetching observations:", error);
-      }
-    };
-
-    fetchObservations();
+    if (token && patientId) {
+      fetchObservations(token, patientId, dispatch, fetchObservationAIInsights);
+    }
   }, [token, patientId, dispatch]);
 
   const fetchConditionAIInsights = async (conditions: any[]) => {
