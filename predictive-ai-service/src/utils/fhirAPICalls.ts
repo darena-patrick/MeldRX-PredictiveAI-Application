@@ -53,6 +53,9 @@ export const fetchFHIRResource = async <T>({
     dispatch(setResourceAction(allResources));
     onFetched?.(allResources);
 
+    console.log(`Fetched ${allResources.length} ${resourceType} resources.`);
+    console.log(`Details of ${resourceType}: ${JSON.stringify(allResources, null, 2)}`);
+
     setLoading?.(false);
   } catch (error) {
     console.error(`Error fetching ${resourceType}:`, error);
