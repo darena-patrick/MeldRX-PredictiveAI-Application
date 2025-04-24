@@ -23,11 +23,20 @@ import {
 import { fetchAIResponse } from "@/utils/serverAPICalls";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Document, Page, Text, StyleSheet, View } from "@react-pdf/renderer";
-import {
-  fetchConditions,
-  fetchDocuments,
-  fetchObservations,
-} from "@/utils/fhirAPICalls";
+import { fetchFHIRResource } from "@/utils/fhirAPICalls";
+import { setAllergies } from "@/app/redux/patientDataSlicers/allergySlice";
+import { setCareTeams } from "@/app/redux/patientDataSlicers/careTeamSlice";
+import { setDevices } from "@/app/redux/patientDataSlicers/deviceSlice";
+import { setDiagnosticReports } from "@/app/redux/patientDataSlicers/diagnosticReportSlice";
+import { setEncounters } from "@/app/redux/patientDataSlicers/encounterSlice";
+import { setGoals } from "@/app/redux/patientDataSlicers/goalSlice";
+import { setImmunizations } from "@/app/redux/patientDataSlicers/immunizationSlice";
+import { setMedicationStatements } from "@/app/redux/patientDataSlicers/medicationStatementSlice";
+import { setProcedures } from "@/app/redux/patientDataSlicers/procedureSlice";
+import { setProvenances } from "@/app/redux/patientDataSlicers/provenanceSlice";
+import { setDocuments } from "@/app/redux/patientDataSlicers/documentSlice";
+import { setObservations } from "@/app/redux/patientDataSlicers/observationsSlice";
+import { setConditions } from "@/app/redux/patientDataSlicers/conditionSlice";
 
 const styles = StyleSheet.create({
   page: {
@@ -189,28 +198,128 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (token && patientId) {
-      fetchDocuments(token, patientId, dispatch, setLoading, setError);
-    }
-  }, [token, patientId, dispatch]);
+    if (!token || !patientId) return;
 
-  useEffect(() => {
-    if (token && patientId) {
-      fetchConditions(
-        token,
-        patientId,
-        dispatch,
-        setLoading,
-        setError,
-        fetchConditionAIInsights
-      );
-    }
-  }, [token, patientId, dispatch]);
+    (async () => {
+      try {
+        await Promise.all([
+          fetchFHIRResource({
+            resourceType: "Observation",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setObservations,
+            onFetched: fetchObservationAIInsights,
+            maxItems: 6,
+          }),
 
-  useEffect(() => {
-    if (token && patientId) {
-      fetchObservations(token, patientId, dispatch, fetchObservationAIInsights);
-    }
+          fetchFHIRResource({
+            resourceType: "DocumentReference",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setDocuments,
+            setLoading,
+            setError,
+          }),
+
+          fetchFHIRResource({
+            resourceType: "Condition",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setConditions,
+            setLoading,
+            setError,
+            onFetched: (conditions) =>
+              fetchConditionAIInsights(conditions.slice(0, 6)),
+            maxItems: 6,
+          }),
+
+          fetchFHIRResource({
+            resourceType: "AllergyIntolerance",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setAllergies,
+          }),
+
+          fetchFHIRResource({
+            resourceType: "CareTeam",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setCareTeams,
+          }),
+
+          fetchFHIRResource({
+            resourceType: "Device",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setDevices,
+          }),
+
+          fetchFHIRResource({
+            resourceType: "DiagnosticReport",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setDiagnosticReports,
+          }),
+
+          fetchFHIRResource({
+            resourceType: "Encounter",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setEncounters,
+          }),
+
+          fetchFHIRResource({
+            resourceType: "Goal",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setGoals,
+          }),
+
+          fetchFHIRResource({
+            resourceType: "Immunization",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setImmunizations,
+          }),
+
+          fetchFHIRResource({
+            resourceType: "MedicationStatement",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setMedicationStatements,
+          }),
+
+          fetchFHIRResource({
+            resourceType: "Procedure",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setProcedures,
+          }),
+
+          fetchFHIRResource({
+            resourceType: "Provenance",
+            token,
+            patientId,
+            dispatch,
+            setResourceAction: setProvenances,
+          }),
+        ]);
+      } catch (err) {
+        console.error("Error fetching FHIR resources:", err);
+      }
+    })();
   }, [token, patientId, dispatch]);
 
   const fetchConditionAIInsights = async (conditions: any[]) => {
