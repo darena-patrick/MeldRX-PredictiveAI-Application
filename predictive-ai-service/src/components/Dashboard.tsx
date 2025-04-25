@@ -1,6 +1,5 @@
 import { DocumentReference } from "@/app/redux/patientDataSlicers/documentSlice";
 import { RootState } from "@/app/redux/store";
-import { fetchAIResponse } from "@/utils/serverAPICalls";
 import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { Progress } from "./ui/Progress";
@@ -41,6 +40,7 @@ export default function Dashboard() {
   const cancelRef = useRef(false);
   const [docLoading, setDocLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
 
   const fetchAndReturnDocument = async (doc: DocumentReference) => {
     setDocLoading(true);
@@ -81,10 +81,13 @@ export default function Dashboard() {
           localResults.push({ index, result: res.result || res });
         }
       } catch (err: any) {
-        localResults.push({
-          index,
-          error: `Unexpected error: ${err.message || err}`,
-        });
+        const errorMessage = `Unexpected error: ${err.message || err}`;
+        localResults.push({ index, error: errorMessage });
+        setError(errorMessage);
+        setErrors((prev) => ({
+          ...prev,
+          [type]: [...(prev[type] || []), errorMessage],
+        }));
       }
 
       setProgressMap((prev) => ({
@@ -92,7 +95,10 @@ export default function Dashboard() {
         [type]: Math.round(((index + 1) / items.length) * 100),
       }));
     }
-    setResults((prev) => ({ ...prev, [type]: localResults }));
+    setResults((prev) => ({
+      ...prev,
+      [type]: [...(prev[type] || []), ...localResults],
+    }));
   };
 
   const analyzeData = async () => {
@@ -190,6 +196,15 @@ export default function Dashboard() {
 
             {expanded[type] && (
               <>
+                {entries.some((e) => e.error) && (
+                  <div className="mb-2 text-red-600 text-sm font-medium">
+                    ⚠️ {entries.filter((e) => e.error).length} error
+                    {entries.filter((e) => e.error).length > 1
+                      ? "s"
+                      : ""} in {type}
+                  </div>
+                )}
+
                 {currentPageEntries.map((entry, i) => (
                   <Card key={i} className="my-2">
                     <CardContent>
@@ -201,6 +216,7 @@ export default function Dashboard() {
                     </CardContent>
                   </Card>
                 ))}
+
                 <div className="flex gap-2 mt-2 justify-end">
                   <button
                     className="btn btn-sm btn-outline"
