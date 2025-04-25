@@ -8,7 +8,6 @@ import axios from "axios";
 // import AnalyzeDocumentsButton from "@/components/AnalyzeDocumentsButton";
 import { DocumentWheel } from "@/components/DocumentWheel";
 import Dashboard from "@/components/Dashboard";
-import DashboardBackup from "@/components/DashboardBackup";
 
 export default function Home() {
   const dispatch = useDispatch();
@@ -112,7 +111,7 @@ export default function Home() {
           )}
 
           <Dashboard />
-          <DashboardBackup />
+          {/* <DashboardBackup /> */}
         </>
       ) : (
         <p className="text-center text-xl text-red-500">Not authenticated</p>
