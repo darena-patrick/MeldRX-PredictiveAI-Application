@@ -39,7 +39,7 @@ import { setConditions } from "@/app/redux/patientDataSlicers/conditionSlice";
 import { setCarePlans } from "@/app/redux/patientDataSlicers/carePlanSlice";
 import { AIResponsePDF } from "./AIResponsePDF";
 
-export default function Dashboard() {
+export default function DashboardBackup() {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
   const token = useSelector((state: RootState) => state.auth.token);
