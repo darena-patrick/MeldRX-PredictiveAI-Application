@@ -11,7 +11,7 @@ interface FHIRContent {
   attachment?: FHIRAttachment;
 }
 
-interface DocumentReference {
+export interface DocumentReference {
   resourceType: "DocumentReference";
   id: string;
   content?: FHIRContent[];

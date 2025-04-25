@@ -4,10 +4,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { setUser, setToken, setPatientId } from "./redux/authSlice"; // Adjust path to redux slice
 import { handleCallback, handleLaunch } from "../utils/auth"; // Assuming these functions are implemented
-import Dashboard from "@/components/Dashboard";
 import axios from "axios";
 // import AnalyzeDocumentsButton from "@/components/AnalyzeDocumentsButton";
 import { DocumentWheel } from "@/components/DocumentWheel";
+import Dashboard from "@/components/Dashboard";
 
 export default function Home() {
   const dispatch = useDispatch();
