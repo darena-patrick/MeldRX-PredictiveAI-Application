@@ -7,10 +7,12 @@ import { Progress } from "./ui/Progress";
 import { Card, CardContent } from "./ui/CardContent";
 import { Spinner } from "./ui/Spinner";
 import { useAllPatientData } from "./hooks/useAllPatientData";
+import { useAIQueue } from "./hooks/useAIQueue";
 
 const PAGE_SIZE = 5;
 
 export default function Dashboard() {
+  const { analyzeItem } = useAIQueue();
   const token = useSelector((state: RootState) => state.auth.token);
   const { allResources, totalCount } = useAllPatientData();
   const {
@@ -60,41 +62,29 @@ export default function Dashboard() {
     }
   };
 
-  const retryFetch = async (prompt: string, retries = 2): Promise<any> => {
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        return await fetchAIResponse(prompt);
-      } catch (err) {
-        if (attempt === retries) throw err;
-      }
-    }
-  };
-
   const analyzeResource = async (
     type: string,
     items: any[],
-    customPrompt?: (item: any) => string,
-    fetchFn?: (item: any) => Promise<{ content: string; contentType: string }>
+    promptFn?: (item: any) => string,
+    fetchFn?: (item: any) => Promise<any>
   ) => {
     const localResults: any[] = [];
     for (let index = 0; index < items.length; index++) {
-      if (cancelRef.current) break;
       const item = items[index];
       setStatus(`Analyzing ${type} ${index + 1} of ${items.length}`);
       try {
-        let prompt = customPrompt
-          ? customPrompt(item)
-          : `Analyze the following ${type}:\n${JSON.stringify(item)}`;
+        const res = await analyzeItem(type, item, promptFn, fetchFn); // <-- use hook-provided function
 
-        if (fetchFn) {
-          const { content, contentType } = await fetchFn(item);
-          prompt = `Analyze the document (${contentType}):\n${content}`;
+        if (res.error) {
+          localResults.push({ index, error: res.error });
+        } else {
+          localResults.push({ index, result: res.result || res });
         }
-
-        const res = await retryFetch(prompt);
-        localResults.push({ index, result: res });
-      } catch (err) {
-        localResults.push({ index, error: String(err) });
+      } catch (err: any) {
+        localResults.push({
+          index,
+          error: `Unexpected error: ${err.message || err}`,
+        });
       }
 
       setProgressMap((prev) => ({

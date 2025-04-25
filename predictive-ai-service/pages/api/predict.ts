@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import { NextApiRequest, NextApiResponse } from "next";
 import { AzureKeyCredential } from "@azure/core-auth";
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 
@@ -43,13 +43,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const modelResponse = await client.path("/chat/completions").post({ body: requestBody });
 
     if (isUnexpected(modelResponse)) {
-      throw modelResponse.body.error;
+      const errorDetail = modelResponse.body.error || "Unknown error from model response"; // Add better error detail handling
+      throw new Error(`Model API returned an error: ${errorDetail}`);
     }
 
     const result = modelResponse.body.choices?.[0]?.message?.content;
     return res.status(200).json({ insights: result });
   } catch (error: any) {
     console.error("Error generating model insights:", error.message);
-    return res.status(500).json({ message: "Failed to generate insights", error: error.message });
+    return res.status(500).json({
+      message: "Failed to generate insights",
+      error: error.message,
+      stack: error.stack || "No stack available", // Optionally add stack trace for more detailed debugging
+    });
   }
 }
