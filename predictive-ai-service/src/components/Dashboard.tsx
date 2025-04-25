@@ -16,19 +16,12 @@ export default function Dashboard() {
   const [status, setStatus] = useState<string>("");
   const [results, setResults] = useState<any[]>([]);
   const [progress, setProgress] = useState<number>(0);
-
-  const [docContent, setDocContent] = useState<string | null>(null);
-  const [docContentType, setDocContentType] = useState<string | null>(null);
-  const [showContentModal, setShowContentModal] = useState<boolean>(false);
   const [docLoading, setDocLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAndShowDocument = async (doc: DocumentReference) => {
+  const fetchAndReturnDocument = async (doc: DocumentReference) => {
     setDocLoading(true);
     setError(null);
-    setDocContent(null);
-    setDocContentType(null);
-
     try {
       const res = await fetch("/api/getDocumentContent", {
         method: "POST",
@@ -41,11 +34,9 @@ export default function Dashboard() {
       }
 
       const { content, contentType } = await res.json();
-      setDocContent(content);
-      setDocContentType(contentType);
-      setShowContentModal(true);
+      return { content, contentType };
     } catch (err: any) {
-      setError(`Error fetching document: ${err.message}`);
+      throw new Error(`Error fetching document: ${err.message}`);
     } finally {
       setDocLoading(false);
     }
@@ -70,48 +61,40 @@ export default function Dashboard() {
     };
 
     for (const [index, condition] of conditions.entries()) {
-      const prompt = `Please respond ONLY with valid JSON in a single code block, like:
-\`\`\`json
-{ "riskScore": 70, ... }
-\`\`\`
-\nCombine the following raw responses for conditions and observations:
-\nCondition response: ${JSON.stringify(condition)}
-Observation response: null
-\nProvide a structured JSON response in the following format:
-{ "riskScore": [0-100], "riskScoreExplanation": string, "recommendedTreatments": [string], "conditionTrends": [string], "preventiveMeasures": [string], "accuracy": [0-1], "accuracyExplanation": string, "normalResponse": string }`;
-
       setStatus(`Analyzing condition ${index + 1} of ${conditions.length}`);
+      const prompt = `Given the condition: ${JSON.stringify(
+        condition
+      )}, provide a structured AI analysis.`;
       try {
         const res = await retryFetch(prompt);
-        setResults((prev) => [...prev, res]);
+        setResults((prev) => [
+          ...prev,
+          { type: "condition", index, result: res },
+        ]);
       } catch (err) {
         setResults((prev) => [
           ...prev,
-          { error: `Condition ${index + 1} failed: ${err}` },
+          { type: "condition", index, error: String(err) },
         ]);
       }
       updateProgress();
     }
 
     for (const [index, observation] of observations.entries()) {
-      const prompt = `Please respond ONLY with valid JSON in a single code block, like:
-\`\`\`json
-{ "riskScore": 70, ... }
-\`\`\`
-\nCombine the following raw responses for conditions and observations:
-\nCondition response: null
-Observation response: ${JSON.stringify(observation)}
-\nProvide a structured JSON response in the following format:
-{ "riskScore": [0-100], "riskScoreExplanation": string, "recommendedTreatments": [string], "conditionTrends": [string], "preventiveMeasures": [string], "accuracy": [0-1], "accuracyExplanation": string, "normalResponse": string }`;
-
       setStatus(`Analyzing observation ${index + 1} of ${observations.length}`);
+      const prompt = `Given the observation: ${JSON.stringify(
+        observation
+      )}, provide a structured AI analysis.`;
       try {
         const res = await retryFetch(prompt);
-        setResults((prev) => [...prev, res]);
+        setResults((prev) => [
+          ...prev,
+          { type: "observation", index, result: res },
+        ]);
       } catch (err) {
         setResults((prev) => [
           ...prev,
-          { error: `Observation ${index + 1} failed: ${err}` },
+          { type: "observation", index, error: String(err) },
         ]);
       }
       updateProgress();
@@ -119,18 +102,25 @@ Observation response: ${JSON.stringify(observation)}
 
     for (const [index, doc] of documentReferences.entries()) {
       setStatus(
-        `Fetching document ${index + 1} of ${documentReferences.length}`
+        `Fetching and analyzing document ${index + 1} of ${
+          documentReferences.length
+        }`
       );
       try {
-        await fetchAndShowDocument(doc);
-        updateProgress();
+        const { content, contentType } = await fetchAndReturnDocument(doc);
+        const prompt = `Analyze the following document content with type ${contentType}:\n${content}`;
+        const res = await retryFetch(prompt);
+        setResults((prev) => [
+          ...prev,
+          { type: "document", index, result: res },
+        ]);
       } catch (err) {
         setResults((prev) => [
           ...prev,
-          { error: `Document ${index + 1} failed: ${err}` },
+          { type: "document", index, error: String(err) },
         ]);
-        updateProgress();
       }
+      updateProgress();
     }
   };
 
@@ -141,37 +131,26 @@ Observation response: ${JSON.stringify(observation)}
   }, [totalCount]);
 
   return (
-    <div className="p-4">
+    <div className="p-4 max-h-screen overflow-y-auto">
       <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
       <div className="mb-4">
         <Progress value={progress} className="h-4" />
         <p className="mt-2 text-sm text-gray-600">{status}</p>
       </div>
-      {results.map((result, i) => (
+      {results.map((entry, i) => (
         <Card key={i} className="mb-4">
           <CardContent>
+            <h2 className="font-semibold text-md mb-1">{`${
+              entry.type.charAt(0).toUpperCase() + entry.type.slice(1)
+            } ${entry.index + 1}`}</h2>
             <pre className="whitespace-pre-wrap text-sm">
-              {JSON.stringify(result, null, 2)}
+              {JSON.stringify(entry.result || entry.error, null, 2)}
             </pre>
           </CardContent>
         </Card>
       ))}
       {docLoading && <Spinner />}
       {error && <p className="text-red-500">{error}</p>}
-      {showContentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-4 rounded shadow-lg max-w-2xl w-full overflow-auto">
-            <h2 className="text-lg font-semibold mb-2">Document Content</h2>
-            <pre className="text-sm whitespace-pre-wrap">{docContent}</pre>
-            <button
-              className="mt-4 btn btn-primary"
-              onClick={() => setShowContentModal(false)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
