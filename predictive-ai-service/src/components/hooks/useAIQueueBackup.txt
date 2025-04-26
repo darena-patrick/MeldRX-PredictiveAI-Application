@@ -1,8 +1,18 @@
+import { useRef } from "react";
+import PQueue from "p-queue";
 import { fetchAIResponse } from "@/utils/serverAPICalls";
 
 type FetchFn = (item: any) => Promise<{ content: string; contentType: string }>;
 
 export const useAIQueue = () => {
+  const queueRef = useRef(
+    new PQueue({
+      concurrency: 5,
+      intervalCap: 24,
+      interval: 60000,
+    })
+  );
+
   const retryFetch = async (
     prompt: string,
     retries = 2,
@@ -14,7 +24,9 @@ export const useAIQueue = () => {
 
       try {
         console.log('fetching ai response...');
-        const response = await fetchAIResponse(prompt, controller.signal);
+        const response = await queueRef.current.add(() =>
+          fetchAIResponse(prompt, controller.signal)
+        );
         console.log('AI response fetched: ' + JSON.stringify(response));
         clearTimeout(timeoutId);
         return response;
@@ -31,23 +43,30 @@ export const useAIQueue = () => {
   };
 
   const analyzeItem = async (
-    type: string,
     item: any,
+    type: string,
     customPrompt?: (item: any) => string,
     fetchFn?: FetchFn
   ) => {
-    let prompt = customPrompt
-      ? customPrompt(item)
-      : `Analyze the following ${type}:\n${JSON.stringify(item, null, 2)}`;
+    return queueRef.current.add(async () => {
+      let prompt = customPrompt
+        ? customPrompt(item)
+        : `Analyze the following ${type}:\n${JSON.stringify(item, null, 2)}`;
 
-    // If fetchFn is provided (e.g., for documents), call it first
-    if (fetchFn) {
-      const { content, contentType } = await fetchFn(item);
-      prompt = `Analyze this ${type} content (Content-Type: ${contentType}):\n${content}`;
-    }
+      if (fetchFn) {
+        const { content, contentType } = await fetchFn(item);
+        prompt = `Analyze the document (${contentType}):\n${content}`;
+      }
 
-    return await retryFetch(prompt);
+      // console.log(`📤 Prompt for ${type}:`, prompt.slice(0, 200));
+      console.log(`Prompt for type ${JSON.stringify(type)}  *** of item ${item}: prompt starts - ${JSON.stringify(prompt)}`);
+      return await retryFetch(prompt);
+    });
   };
 
-  return { analyzeItem };
+  return {
+    queue: queueRef.current,
+    analyzeItem,
+    retryFetch,
+  };
 };
