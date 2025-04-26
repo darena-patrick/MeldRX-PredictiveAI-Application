@@ -23,9 +23,11 @@ export const useAIQueue = () => {
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       try {
+        console.log('fetching ai response...');
         const response = await queueRef.current.add(() =>
           fetchAIResponse(prompt, controller.signal)
         );
+        console.log('AI response fetched: ' + response);
         clearTimeout(timeoutId);
         return response;
       } catch (err: any) {
@@ -57,7 +59,7 @@ export const useAIQueue = () => {
       }
 
       // console.log(`📤 Prompt for ${type}:`, prompt.slice(0, 200));
-      console.log(`Prompt for type ${JSON.stringify(type)}  *** of item ${item}: ${prompt}`);
+      console.log(`Prompt for type ${JSON.stringify(type)}  *** of item ${item}: prompt starts - ${JSON.stringify(prompt)}`);
       return await retryFetch(prompt);
     });
   };
