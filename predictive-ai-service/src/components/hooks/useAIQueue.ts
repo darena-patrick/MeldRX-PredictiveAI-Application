@@ -27,7 +27,7 @@ export const useAIQueue = () => {
         const response = await queueRef.current.add(() =>
           fetchAIResponse(prompt, controller.signal)
         );
-        console.log('AI response fetched: ' + response);
+        console.log('AI response fetched: ' + JSON.stringify(response));
         clearTimeout(timeoutId);
         return response;
       } catch (err: any) {
