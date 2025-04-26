@@ -8,7 +8,7 @@ export async function fetchAIResponse(
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const res = await fetch("/api/analyze", {
+    const res = await fetch("/api/predict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt }),

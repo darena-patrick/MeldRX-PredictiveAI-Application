@@ -46,7 +46,7 @@ export default function Dashboard() {
     setDocLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/getDocumentContent", {
+      const res = await fetch("api/analyzeDocument", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ document: doc, token }),
