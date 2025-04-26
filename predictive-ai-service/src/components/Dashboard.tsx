@@ -41,6 +41,9 @@ export default function Dashboard() {
   const [docLoading, setDocLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [currentlyAnalyzingType, setCurrentlyAnalyzingType] = useState<
+    string | null
+  >(null);
 
   const fetchAndReturnDocument = async (doc: DocumentReference) => {
     setDocLoading(true);
@@ -69,11 +72,12 @@ export default function Dashboard() {
     fetchFn?: (item: any) => Promise<any>
   ) => {
     const localResults: any[] = [];
+    setCurrentlyAnalyzingType(type);
     for (let index = 0; index < items.length; index++) {
       const item = items[index];
       setStatus(`Analyzing ${type} ${index + 1} of ${items.length}`);
       try {
-        const res = await analyzeItem(type, item, promptFn, fetchFn); // <-- use hook-provided function
+        const res = await analyzeItem(type, item, promptFn, fetchFn);
 
         if (res.error) {
           localResults.push({ index, error: res.error });
@@ -114,6 +118,7 @@ export default function Dashboard() {
       promptFn?: (item: any) => string,
       fetchFn?: (item: any) => Promise<any>
     ) => {
+      if (items.length === 0) return;
       setPages((p) => ({ ...p, [type]: 1 }));
       setExpanded((e) => ({ ...e, [type]: true }));
       tasks.push(analyzeResource(type, items, promptFn, fetchFn));
@@ -141,6 +146,7 @@ export default function Dashboard() {
 
     await Promise.all(tasks);
     setStatus("Analysis completed.");
+    setCurrentlyAnalyzingType(null);
     setIsRunning(false);
   };
 
@@ -185,7 +191,12 @@ export default function Dashboard() {
         const currentPageEntries = entries.slice(start, start + PAGE_SIZE);
 
         return (
-          <div key={type} className="mb-4 border rounded p-3 shadow">
+          <div
+            key={type}
+            className={`mb-4 border rounded p-3 shadow ${
+              currentlyAnalyzingType === type ? "bg-yellow-50" : ""
+            }`}
+          >
             <div
               className="flex justify-between items-center cursor-pointer"
               onClick={() => toggleExpand(type)}

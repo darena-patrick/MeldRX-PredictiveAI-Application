@@ -13,12 +13,29 @@ export const useAIQueue = () => {
     })
   );
 
-  const retryFetch = async (prompt: string, retries = 2): Promise<any> => {
+  const retryFetch = async (
+    prompt: string,
+    retries = 2,
+    timeout = 15000
+  ): Promise<any> => {
     for (let attempt = 0; attempt <= retries; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
       try {
-        return await queueRef.current.add(() => fetchAIResponse(prompt));
-      } catch (err) {
-        if (attempt === retries) throw err;
+        const response = await queueRef.current.add(() =>
+          fetchAIResponse(prompt, controller.signal)
+        );
+        clearTimeout(timeoutId);
+        return response;
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        if (attempt === retries) {
+          console.error(`❌ Final attempt failed for prompt:`, prompt);
+          throw err;
+        } else {
+          console.warn(`⏳ Retry ${attempt + 1} for prompt:`, prompt);
+        }
       }
     }
   };
@@ -32,14 +49,15 @@ export const useAIQueue = () => {
     return queueRef.current.add(async () => {
       let prompt = customPrompt
         ? customPrompt(item)
-        : `Analyze the following ${type}:\n${JSON.stringify(item)}`;
+        : `Analyze the following ${type}:\n${JSON.stringify(item, null, 2)}`;
 
       if (fetchFn) {
         const { content, contentType } = await fetchFn(item);
         prompt = `Analyze the document (${contentType}):\n${content}`;
       }
 
-      console.log(`Prompt for type ${type} of item ${item}: ${prompt}`);
+      // console.log(`📤 Prompt for ${type}:`, prompt.slice(0, 200));
+      console.log(`Prompt for type ${JSON.stringify(type)}  *** of item ${item}: ${prompt}`);
       return await retryFetch(prompt);
     });
   };

@@ -1,17 +1,38 @@
-export const fetchAIResponse = async (prompt: string) => {
+export async function fetchAIResponse(
+  prompt: string,
+  signal?: AbortSignal,
+  retries = 2,
+  timeout = 15000
+): Promise<{ result?: any; error?: string }> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
   try {
-    const res = await fetch(`/api/predict?prompt=${encodeURIComponent(prompt)}`);
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+      signal: signal || controller.signal,
+    });
+
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       const errorText = await res.text();
-      console.error("API Error:", errorText);
-      return { error: `API Error: ${errorText}` };  // Return as object
+      return { error: `Server error: ${res.status} - ${errorText}` };
     }
 
     const data = await res.json();
-    return data.insights ? { result: data.insights } : { error: "No insights returned" };
-  } catch (error: any) {
-    console.error("Fetch Error:", error);
-    return { error: `Fetch error: ${error.message || "Unknown error"}` };
+    return { result: data.result || data };
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === "AbortError") {
+      if (retries > 0) {
+        console.warn("⚠️ Timeout occurred, retrying...", retries);
+        return await fetchAIResponse(prompt, undefined, retries - 1, timeout);
+      }
+      return { error: "Request timed out." };
+    }
+    return { error: `Unexpected error: ${err.message || err.toString()}` };
   }
-};
+}
