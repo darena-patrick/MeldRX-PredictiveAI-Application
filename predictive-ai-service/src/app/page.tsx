@@ -8,7 +8,6 @@ import axios from "axios";
 // import AnalyzeDocumentsButton from "@/components/AnalyzeDocumentsButton";
 import { DocumentWheel } from "@/components/DocumentWheel";
 import Dashboard from "@/components/Dashboard";
-import DebugData from "@/components/DebugData";
 
 export default function Home() {
   const dispatch = useDispatch();
@@ -111,8 +110,8 @@ export default function Home() {
             <p className="text-center text-xl">Loading Patient Name...</p>
           )}
 
-          <DebugData />
-          {/* <Dashboard /> */}
+          {/* <DebugData /> */}
+          <Dashboard />
           {/* <DashboardBackup /> */}
         </>
       ) : (
