@@ -39,6 +39,7 @@ export const useAIQueue = () => {
         prompt = `Analyze the document (${contentType}):\n${content}`;
       }
 
+      console.log(`Prompt for type ${type} of item ${item}: ${prompt}`);
       return await retryFetch(prompt);
     });
   };
