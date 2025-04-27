@@ -1,4 +1,3 @@
-import { DocumentReference } from "@/app/redux/patientDataSlicers/documentSlice";
 import { RootState } from "@/app/redux/store";
 import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
@@ -41,26 +40,6 @@ export default function Dashboard() {
   const [docLoading, setDocLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
-
-  const fetchAndReturnDocument = async (doc: DocumentReference) => {
-    setDocLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("api/analyzeDocument", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document: doc, token }),
-      });
-
-      if (!res.ok) throw new Error(await res.text());
-      const { content, contentType } = await res.json();
-      return { content, contentType };
-    } catch (err: any) {
-      throw new Error(`Error fetching document: ${err.message}`);
-    } finally {
-      setDocLoading(false);
-    }
-  };
 
   const analyzeResource = async (
     type: string,
@@ -112,12 +91,11 @@ export default function Dashboard() {
     const analyze = (
       type: string,
       items: any[],
-      promptFn?: (item: any) => string,
-      fetchFn?: (item: any) => Promise<any>
+      promptFn?: (item: any) => string
     ) => {
       setPages((p) => ({ ...p, [type]: 1 }));
       setExpanded((e) => ({ ...e, [type]: true }));
-      tasks.push(analyzeResource(type, items, promptFn, fetchFn));
+      tasks.push(analyzeResource(type, items, promptFn));
     };
 
     analyze("Condition", Condition);
@@ -125,8 +103,7 @@ export default function Dashboard() {
     analyze(
       "DocumentReference",
       DocumentReference,
-      undefined,
-      fetchAndReturnDocument
+      (doc) => `Analyze this document: ${doc.type?.text || "Unknown Document"}`
     );
     analyze("AllergyIntolerance", AllergyIntolerance);
     analyze("CarePlan", CarePlan);
@@ -142,7 +119,6 @@ export default function Dashboard() {
 
     await Promise.all(tasks);
     setStatus("Analysis completed.");
-
     setIsRunning(false);
   };
 
