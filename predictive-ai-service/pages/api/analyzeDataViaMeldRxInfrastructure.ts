@@ -1,58 +1,39 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const { item, prompt, token } = req.body;
-
-  if (!item || !prompt) {
-    return res.status(400).json({ error: "Missing required fields: item or prompt" });
-  }
+export async function fetchAIResponse(
+  item: any,
+  prompt: string,
+  signal?: AbortSignal,
+  retries = 2,
+  timeout = 15000
+): Promise<{ result?: any; error?: string }> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    let preparedInput = item;
-
-    // OPTIONAL: If item is a DocumentReference and you want to fetch content:
-    if (item.resourceType === "DocumentReference" && item.content?.[0]?.attachment?.url) {
-      const attachmentUrl = item.content[0].attachment.url;
-      const fetchedContent = await fetch(attachmentUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const contentData = await fetchedContent.text(); // or blob if it's a file
-
-      preparedInput = { ...item, fetchedContent: contentData };
-    }
-
-    // Build your AI request here
-    const aiRequest = {
-      model: "Llama-3.2-11B-Vision-Instruct", // Model identifier
-      systemMessage: "you are a healthcare practitioner", // System instruction
-      chatMessage: prompt, // Your custom prompt
-      base64BinaryData: preparedInput.fetchedContent || "", // If there's a fetched content, send as base64
-      base64BinaryDataName: "boneXray.jpg", // The name of the file, adjust if necessary
-    };
-
-    // Call the actual AI model
-    const aiResponse = await fetch("https://app.meldrx.com/api/23cd739c-3141-4d1a-81a3-697b766ccb56/ai", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(aiRequest),
+    const res = await fetch("/api/analyzeDataViaMeldRxInfrastructure", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ item, prompt }),
+      signal: signal || controller.signal,
     });
 
-    if (!aiResponse.ok) {
-      throw new Error('AI request failed');
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      return { error: `Server error: ${res.status} - ${errorText}` };
     }
 
-    const aiResult = await aiResponse.json();
-
-    // Return the AI response
-    res.status(200).json({ result: aiResult });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || "Unknown error" });
+    const data = await res.json();
+    return { result: data.result || data };
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === "AbortError") {
+      if (retries > 0) {
+        console.warn("⚠️ Timeout occurred, retrying...", retries);
+        return await fetchAIResponse(item, prompt, undefined, retries - 1, timeout);
+      }
+      return { error: "Request timed out." };
+    }
+    return { error: `Unexpected error: ${err.message || err.toString()}` };
   }
 }

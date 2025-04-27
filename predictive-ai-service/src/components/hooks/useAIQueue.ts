@@ -4,6 +4,7 @@ type FetchFn = (item: any) => Promise<{ content: string; contentType: string }>;
 
 export const useAIQueue = () => {
   const retryFetch = async (
+    item: any,     
     prompt: string,
     retries = 2,
     timeout = 15000
@@ -14,7 +15,7 @@ export const useAIQueue = () => {
 
       try {
         console.log('fetching ai response...');
-        const response = await fetchAIResponse(prompt, controller.signal);
+        const response = await fetchAIResponse(item, prompt, controller.signal); 
         console.log('AI response fetched: ' + JSON.stringify(response));
         clearTimeout(timeoutId);
         return response;
@@ -46,7 +47,7 @@ export const useAIQueue = () => {
       prompt = `Analyze this ${type} content (Content-Type: ${contentType}):\n${content}`;
     }
 
-    return await retryFetch(prompt);
+    return await retryFetch(item, prompt); 
   };
 
   return { analyzeItem };
