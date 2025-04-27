@@ -1,10 +1,16 @@
+"use client";
+
+import { RootState } from "@/app/redux/store";
 import { fetchAIResponse } from "@/utils/serverAPICalls";
+import { useSelector } from "react-redux";
 
 type FetchFn = (item: any) => Promise<{ content: string; contentType: string }>;
 
 export const useAIQueue = () => {
+  const token = useSelector((state: RootState) => state.auth.token);
+
   const retryFetch = async (
-    item: any,     
+    item: any,    
     prompt: string,
     retries = 2,
     timeout = 15000
@@ -15,7 +21,8 @@ export const useAIQueue = () => {
 
       try {
         console.log('fetching ai response...');
-        const response = await fetchAIResponse(item, prompt, controller.signal); 
+        const response = await fetchAIResponse(prompt, item, token, controller.signal);
+
         console.log('AI response fetched: ' + JSON.stringify(response));
         clearTimeout(timeoutId);
         return response;

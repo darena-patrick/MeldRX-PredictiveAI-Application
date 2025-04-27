@@ -11,7 +11,7 @@ const PAGE_SIZE = 5;
 
 export default function Dashboard() {
   const { analyzeItem } = useAIQueue();
-  const token = useSelector((state: RootState) => state.auth.token);
+
   const { allResources, totalCount } = useAllPatientData();
   const {
     Condition = [],
