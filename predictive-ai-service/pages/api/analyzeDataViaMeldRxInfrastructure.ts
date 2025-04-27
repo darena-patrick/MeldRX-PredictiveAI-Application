@@ -45,14 +45,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     if (!aiResponse.ok) {
-      throw new Error('AI request failed');
+      const errorText = await aiResponse.text();
+      console.error(`❌ AI Error Response: ${errorText}`);
+      throw new Error(`AI request failed: ${aiResponse.status} ${aiResponse.statusText} - ${errorText}`);
     }
+    
 
     const aiResult = await aiResponse.json();
 
     // Return the AI response
     res.status(200).json({ result: aiResult });
   } catch (error: any) {
-    res.status(500).json({ error: error.message || "Unknown error" });
-  }
+      console.error(`❌ Handler error:`, error); 
+      res.status(500).json({ error: error.message || "Unknown error" });
+    }
+    
 }
