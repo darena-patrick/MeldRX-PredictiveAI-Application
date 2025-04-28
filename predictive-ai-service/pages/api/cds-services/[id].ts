@@ -30,7 +30,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           {
             summary: `AI Insights for ${name}`,
             detail: analysisStatus, 
-            indicator: "info",
+            indicator: lastAnalyzed ? "info" : "warning",
             source: {
               label: "AI Health Insights",
             },
