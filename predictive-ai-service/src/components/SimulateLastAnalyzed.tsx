@@ -12,9 +12,12 @@ export const SimulateLastAnalyzed = () => {
 
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     try {
-      await fetch(`/api/analyze?patientId=${patientId}&date=${today}`, {
-        method: "POST",
-      });
+      await fetch(
+        `/api/updateLastAnalyzed?patientId=${patientId}&date=${today}`,
+        {
+          method: "POST",
+        }
+      );
       setStatus(`Last analyzed on ${today}`);
     } catch (err) {
       console.error("Failed to analyze patient:", err);
