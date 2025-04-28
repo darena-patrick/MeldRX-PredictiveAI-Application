@@ -53,7 +53,7 @@ export default function Dashboard() {
       const item = items[index];
       setStatus(`Analyzing ${type} ${index + 1} of ${items.length}`);
       try {
-        const res = await analyzeItem(type, item, promptFn, fetchFn); // <-- use hook-provided function
+        const res = await analyzeItem(type, item, promptFn, fetchFn);
 
         if (res.error) {
           localResults.push({ index, error: res.error });

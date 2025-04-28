@@ -7,6 +7,7 @@ import { useDispatch } from "react-redux";
 import { addAnalysis } from "@/app/redux/analysisSlice";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import AnalysisPDF from "./AnalysisPDF";
+import { useAIQueue } from "./hooks/useAIQueue";
 
 type DocumentReference = {
   id: string;
@@ -40,6 +41,10 @@ export const DocumentWheel: React.FC = () => {
   const [docContentType, setDocContentType] = useState<string | null>(null);
   const [docLoading, setDocLoading] = useState(false);
   const [showContentModal, setShowContentModal] = useState(false);
+  const [docContentCache, setDocContentCache] = useState<
+    Record<string, { content: string; contentType: string }>
+  >({});
+  const { analyzeItem } = useAIQueue();
 
   // const openModal = (url: string) => {
   //   setActiveDocUrl(url);
@@ -71,6 +76,10 @@ export const DocumentWheel: React.FC = () => {
       const { content, contentType } = await res.json();
       setDocContent(content);
       setDocContentType(contentType);
+      setDocContentCache((prev) => ({
+        ...prev,
+        [doc.id]: { content, contentType },
+      }));
       setShowContentModal(true);
     } catch (err: any) {
       setError(`Error fetching document: ${err.message}`);
@@ -108,25 +117,48 @@ export const DocumentWheel: React.FC = () => {
       console.log("doc string", JSON.stringify(doc));
       console.log("token", token);
 
-      const response = await fetch("/api/analyzeDocument", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const res = await analyzeItem(
+        "DocumentReference",
+        doc,
+        (doc) => {
+          const cached = docContentCache[doc.id];
+          return `Analyze the following document content:\n\n${
+            cached ? cached.content : JSON.stringify(doc)
+          }\n\n${
+            templatedQuestions.length > 0
+              ? `Answer these questions: ${templatedQuestions.join(", ")}`
+              : ""
+          }`;
         },
-        body: JSON.stringify({ document: doc, token, templatedQuestions }),
-      });
+        async (doc) => {
+          const cached = docContentCache[doc.id];
+          if (cached) {
+            console.log("Using cached document content for analysis");
+            return cached;
+          }
+          console.log("Fetching document content from server...");
+          const fetchRes = await fetch("/api/getDocumentContent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ document: doc, token }),
+          });
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Error: ${text}`);
-      }
+          if (!fetchRes.ok) {
+            throw new Error(await fetchRes.text());
+          }
 
-      const result = await response.json();
+          const { content, contentType } = await fetchRes.json();
+          setDocContentCache((prev) => ({
+            ...prev,
+            [doc.id]: { content, contentType },
+          }));
+          return { content, contentType };
+        }
+      );
 
-      console.log("Analysis result:", result);
-
-      dispatch(addAnalysis({ documentId: doc.id, result }));
-      setAnalysisResults((prev) => ({ ...prev, [doc.id]: result.analysis }));
+      console.log("Analysis result:", res);
+      dispatch(addAnalysis({ documentId: doc.id, result: res }));
+      setAnalysisResults((prev) => ({ ...prev, [doc.id]: res.analysis }));
     } catch (err: any) {
       console.error("Failed to analyze document:", err);
       setError(`Failed: ${err.message}`);
