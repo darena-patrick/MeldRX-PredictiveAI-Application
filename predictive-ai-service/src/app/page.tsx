@@ -8,6 +8,7 @@ import axios from "axios";
 // import AnalyzeDocumentsButton from "@/components/AnalyzeDocumentsButton";
 import { DocumentWheel } from "@/components/DocumentWheel";
 import Dashboard from "@/components/Dashboard";
+import { SimulateLastAnalyzed } from "@/components/SimulateLastanalyzed";
 
 export default function Home() {
   const dispatch = useDispatch();
@@ -92,7 +93,7 @@ export default function Home() {
 
       <div className="p-4">
         <h1 className="text-xl font-bold mb-4">Patient Documents</h1>
-        <DocumentWheel />
+        {/* <DocumentWheel /> */}
       </div>
 
       {loading ? (
@@ -110,8 +111,9 @@ export default function Home() {
             <p className="text-center text-xl">Loading Patient Name...</p>
           )}
 
+          <SimulateLastAnalyzed />
           {/* <DebugData /> */}
-          <Dashboard />
+          {/* <Dashboard /> */}
           {/* <DashboardBackup /> */}
         </>
       ) : (

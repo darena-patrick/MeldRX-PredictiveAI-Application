@@ -1,5 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 
+export const patientAnalysisDates: { [patientId: string]: string } = {};
+
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method Not Allowed" });
@@ -15,12 +17,19 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       }
 
       const patient = prefetch.patient;
+      const patientId = patient.id;
       const name = `${patient.name?.[0]?.given?.[0] || "Unknown"} ${patient.name?.[0]?.family || ""}`.trim();
+
+      const lastAnalyzed = patientAnalysisDates[patientId];
+      const analysisStatus = lastAnalyzed
+        ? `Last analyzed on ${lastAnalyzed}`
+        : "Patient not yet analyzed";
 
       return res.json({
         cards: [
           {
             summary: `AI Insights for ${name}`,
+            detail: analysisStatus, 
             indicator: "info",
             source: {
               label: "AI Health Insights",
