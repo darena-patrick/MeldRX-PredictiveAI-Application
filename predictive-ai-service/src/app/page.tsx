@@ -6,6 +6,7 @@ import { setUser, setToken, setPatientId } from "./redux/authSlice"; // Adjust p
 import { handleCallback, handleLaunch } from "../utils/auth"; // Assuming these functions are implemented
 import axios from "axios";
 import { SimulateLastAnalyzed } from "@/components/SimulateLastAnalyzed";
+import Dashboard from "@/components/Dashboard";
 // import AnalyzeDocumentsButton from "@/components/AnalyzeDocumentsButton";
 // import { DocumentWheel } from "@/components/DocumentWheel";
 // import Dashboard from "@/components/Dashboard";
@@ -113,7 +114,7 @@ export default function Home() {
 
           <SimulateLastAnalyzed />
           {/* <DebugData /> */}
-          {/* <Dashboard /> */}
+          <Dashboard />
           {/* <DashboardBackup /> */}
         </>
       ) : (
