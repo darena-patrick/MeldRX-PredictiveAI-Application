@@ -13,28 +13,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     let preparedInput = item;
+    let base64Content: string | null = null;
 
-    // OPTIONAL: If item is a DocumentReference and you want to fetch content:
     if (item.resourceType === "DocumentReference" && item.content?.[0]?.attachment?.url) {
       const attachmentUrl = item.content[0].attachment.url;
+      const contentType = item.content[0].attachment.contentType || "";
+
       const fetchedContent = await fetch(attachmentUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const contentData = await fetchedContent.text(); // or blob if it's a file
 
-      preparedInput = { ...item, fetchedContent: contentData };
+      if (!fetchedContent.ok) {
+        throw new Error(`Failed to fetch attachment: ${fetchedContent.statusText}`);
+      }
+
+      if (contentType.startsWith("image/") || contentType.startsWith("application/pdf")) {
+        // Binary file → Blob → Base64
+        const blob = await fetchedContent.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        base64Content = Buffer.from(arrayBuffer).toString('base64');
+      } else {
+        // Text file → plain text
+        const textContent = await fetchedContent.text();
+        preparedInput = { ...item, fetchedContent: textContent };
+      }
     }
 
-    // Build your AI request here
     const aiRequest = {
-      model: "Llama-3.2-11B-Vision-Instruct", // Model identifier
-      systemMessage: "you are a healthcare practitioner", // System instruction
-      chatMessage: prompt, // Your custom prompt
-      base64BinaryData: preparedInput.fetchedContent || "", // If there's a fetched content, send as base64
-      base64BinaryDataName: "boneXray.jpg", // The name of the file, adjust if necessary
+      model: "Llama-3.2-11B-Vision-Instruct",
+      systemMessage: "you are a healthcare practitioner",
+      chatMessage: prompt,
+      base64BinaryData: base64Content || "", // base64 only for binary
+      base64BinaryDataName: "attachment", // optional
     };
 
-    // Call the actual AI model
     const aiResponse = await fetch("https://app.meldrx.com/api/23cd739c-3141-4d1a-81a3-697b766ccb56/ai", {
       method: 'POST',
       headers: {
@@ -49,15 +61,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error(`❌ AI Error Response: ${errorText}`);
       throw new Error(`AI request failed: ${aiResponse.status} ${aiResponse.statusText} - ${errorText}`);
     }
-    
 
     const aiResult = await aiResponse.json();
-
-    // Return the AI response
     res.status(200).json({ result: aiResult });
+
   } catch (error: any) {
-      console.error(`❌ Handler error:`, error); 
-      res.status(500).json({ error: error.message || "Unknown error" });
-    }
-    
+    console.error(`❌ Handler error:`, error);
+    res.status(500).json({ error: error.message || "Unknown error" });
+  }
 }
