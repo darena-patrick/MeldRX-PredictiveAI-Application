@@ -28,8 +28,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.json({
         cards: [
           {
-            summary: `AI Insights for ${name}`,
-            detail: analysisStatus, 
+            summary: `AI Insights for ${name} - ${analysisStatus}`, 
             indicator: lastAnalyzed ? "info" : "warning",
             source: {
               label: "AI Health Insights",
