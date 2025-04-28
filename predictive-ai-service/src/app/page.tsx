@@ -115,7 +115,7 @@ export default function Home() {
 
           <SimulateLastAnalyzed />
           {/* <DebugData /> */}
-          {/* <Dashboard /> */}
+          <Dashboard />
           {/* <DashboardBackup /> */}
         </>
       ) : (
