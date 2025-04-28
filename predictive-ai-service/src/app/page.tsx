@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { setUser, setToken, setPatientId } from "./redux/authSlice"; // Adjust path to redux slice
 import { handleCallback, handleLaunch } from "../utils/auth"; // Assuming these functions are implemented
 import axios from "axios";
-import { SimulateLastAnalyzed } from "@/components/SimulateLastanalyzed";
+import { SimulateLastAnalyzed } from "@/components/SimulateLastAnalyzed";
 // import AnalyzeDocumentsButton from "@/components/AnalyzeDocumentsButton";
 // import { DocumentWheel } from "@/components/DocumentWheel";
 // import Dashboard from "@/components/Dashboard";
