@@ -7,6 +7,7 @@ import { handleCallback, handleLaunch } from "../utils/auth"; // Assuming these 
 import axios from "axios";
 import { SimulateLastAnalyzed } from "@/components/SimulateLastAnalyzed";
 import Dashboard from "@/components/Dashboard";
+import { DocumentWheel } from "@/components/DocumentWheel";
 // import AnalyzeDocumentsButton from "@/components/AnalyzeDocumentsButton";
 // import { DocumentWheel } from "@/components/DocumentWheel";
 // import Dashboard from "@/components/Dashboard";
@@ -94,7 +95,7 @@ export default function Home() {
 
       <div className="p-4">
         <h1 className="text-xl font-bold mb-4">Patient Documents</h1>
-        {/* <DocumentWheel /> */}
+        <DocumentWheel />
       </div>
 
       {loading ? (
