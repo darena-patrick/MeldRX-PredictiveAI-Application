@@ -63,10 +63,19 @@ export const DocumentWheel: React.FC = () => {
     setDocContentType(null);
 
     try {
+      const attachment = doc.content?.[0]?.attachment;
+      const isBase64Data = attachment?.data;
+      const url = attachment?.url;
+
       const res = await fetch("/api/getDocumentContent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document: doc, token }),
+        body: JSON.stringify({
+          ...(isBase64Data
+            ? { data: isBase64Data, contentType: attachment?.contentType }
+            : { url }),
+          token,
+        }),
       });
 
       if (!res.ok) {
