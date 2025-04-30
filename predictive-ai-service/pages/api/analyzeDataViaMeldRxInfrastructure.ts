@@ -48,8 +48,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       chatMessage: prompt,
       base64BinaryData: base64Content || "",
       base64BinaryDataName: "attachment" + (contentType ? `.${contentType.split("/")[1]}` : ""),
-      fhirResource: preparedInput,
+      fhirResource: base64Content ? { resourceType: item.resourceType, id: item.id, type: item.type } : preparedInput,
     };
+    
 
     const azureToken = process.env.AZURE_TOKEN;
     if (!azureToken) {
