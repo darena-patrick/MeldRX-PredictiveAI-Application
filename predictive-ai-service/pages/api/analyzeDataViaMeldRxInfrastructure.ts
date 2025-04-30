@@ -67,7 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${azureToken}`,
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify(aiRequest),
   });
