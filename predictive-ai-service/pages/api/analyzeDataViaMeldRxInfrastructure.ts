@@ -1,17 +1,16 @@
 import { NextApiRequest, NextApiResponse } from "next";
 
-const MAX_TEXT_LENGTH = 12000;
-const MAX_STRING_FIELD_LENGTH = 1000;
+const MAX_PROMPT_CHARS = 3000;
+const MAX_TEXT_CHARS = 3000;
+const MAX_STRING_FIELD_LENGTH = 300; // aggressive trimming
 
-// Trims any deep long string fields in a JSON object
 function trimLargeFields(obj: any, maxLength = MAX_STRING_FIELD_LENGTH): any {
   if (typeof obj !== "object" || obj === null) return obj;
-
   const trimmed: any = Array.isArray(obj) ? [] : {};
   for (const key in obj) {
     const val = obj[key];
-    if (typeof val === "string" && val.length > maxLength) {
-      trimmed[key] = val.slice(0, maxLength) + "...[truncated]";
+    if (typeof val === "string") {
+      trimmed[key] = val.length > maxLength ? val.slice(0, maxLength) + "...[truncated]" : val;
     } else if (typeof val === "object") {
       trimmed[key] = trimLargeFields(val, maxLength);
     } else {
@@ -19,6 +18,12 @@ function trimLargeFields(obj: any, maxLength = MAX_STRING_FIELD_LENGTH): any {
     }
   }
   return trimmed;
+}
+
+// Estimate token count very roughly (1 token ≈ 4 chars)
+function estimateTokenCount(input: string | object): number {
+  const text = typeof input === "string" ? input : JSON.stringify(input);
+  return Math.ceil(text.length / 4);
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -57,20 +62,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const textContent = await fetchedContent.text();
         preparedInput = {
           ...item,
-          fetchedContent: textContent.length > MAX_TEXT_LENGTH
-            ? textContent.slice(0, MAX_TEXT_LENGTH) + "...[truncated]"
+          fetchedContent: textContent.length > MAX_TEXT_CHARS
+            ? textContent.slice(0, MAX_TEXT_CHARS) + "...[truncated]"
             : textContent,
         };
       }
     }
 
-    // Trim deeply nested fields to prevent token overrun
     const trimmedInput = trimLargeFields(preparedInput);
 
     const aiRequest = {
       model: "Llama-3.2-11B-Vision-Instruct",
       systemMessage: "you are a medical model",
-      chatMessage: prompt.slice(0, MAX_TEXT_LENGTH), // truncate prompt just in case
+      chatMessage: prompt.slice(0, MAX_PROMPT_CHARS),
       base64BinaryData: base64Content || "",
       base64BinaryDataName: base64Content
         ? "attachment" + (contentType ? `.${contentType.split("/")[1]}` : "")
@@ -83,6 +87,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
         : trimmedInput,
     };
+
+    // Debugging: Estimate token count
+    const estimatedTokens = estimateTokenCount(aiRequest);
+    console.log(`🧮 Estimated token count: ~${estimatedTokens} tokens`);
 
     const azureToken = process.env.AZURE_TOKEN;
     if (!azureToken) {
