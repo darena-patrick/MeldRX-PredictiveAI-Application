@@ -31,15 +31,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         throw new Error(`Failed to fetch attachment: ${fetchedContent.statusText}`);
       }
 
-      const blob = await fetchedContent.blob();
-      const arrayBuffer = await blob.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString("base64");
-
-      // 🛠 Wrap in data URI if it's an image or PDF
       if (contentType && contentType.startsWith("image/") || contentType === "application/pdf") {
-        base64Content = `data:${contentType};base64,${base64}`;
+        // Convert binary content to base64 (no data URI prefix)
+        const arrayBuffer = await fetchedContent.arrayBuffer();
+        base64Content = Buffer.from(arrayBuffer).toString("base64");
       } else {
-        // Assume text for others
+        // Assume text
         const textContent = await fetchedContent.text();
         preparedInput = { ...item, fetchedContent: textContent };
       }
@@ -51,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       chatMessage: prompt,
       base64BinaryData: base64Content || "",
       base64BinaryDataName: "attachment" + (contentType ? `.${contentType.split("/")[1]}` : ""),
-      fhirResource: preparedInput, // generic support
+      fhirResource: preparedInput,
     };
 
     const azureToken = process.env.AZURE_TOKEN;
