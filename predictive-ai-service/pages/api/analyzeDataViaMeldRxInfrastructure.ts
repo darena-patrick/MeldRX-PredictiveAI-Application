@@ -123,7 +123,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
       body: JSON.stringify(aiRequest),
     });
-
+    
     const responseText = await aiResponse.text();
 
     if (!aiResponse.ok) {
@@ -131,15 +131,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw new Error(`AI request failed: ${aiResponse.status} ${aiResponse.statusText} - ${responseText}`);
     }
     
-    let aiResult;
+    let result;
     try {
-      aiResult = JSON.parse(responseText);
+      result = JSON.parse(responseText);
     } catch (err) {
-      console.error("❌ Failed to parse AI response as JSON:", responseText);
-      throw new Error("AI response was not valid JSON:\n" + responseText);
+      // If parsing fails, assume it's plain text and wrap it manually
+      console.warn("⚠️ AI response was not valid JSON, using raw text.");
+      result = { content: responseText };
     }
     
-    res.status(200).json({ result: aiResult });
+    res.status(200).json({ result });
+    
     
 
   } catch (error: any) {
