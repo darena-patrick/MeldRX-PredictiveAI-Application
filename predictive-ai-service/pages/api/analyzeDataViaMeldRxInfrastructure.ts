@@ -124,14 +124,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       body: JSON.stringify(aiRequest),
     });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error(`❌ AI Error Response: ${errorText}`);
-      throw new Error(`AI request failed: ${aiResponse.status} ${aiResponse.statusText} - ${errorText}`);
-    }
+    const responseText = await aiResponse.text();
 
-    const aiResult = await aiResponse.json();
+    if (!aiResponse.ok) {
+      console.error(`❌ AI Error Response: ${responseText}`);
+      throw new Error(`AI request failed: ${aiResponse.status} ${aiResponse.statusText} - ${responseText}`);
+    }
+    
+    let aiResult;
+    try {
+      aiResult = JSON.parse(responseText);
+    } catch (err) {
+      console.error("❌ Failed to parse AI response as JSON:", responseText);
+      throw new Error("AI response was not valid JSON:\n" + responseText);
+    }
+    
     res.status(200).json({ result: aiResult });
+    
 
   } catch (error: any) {
     console.error(`❌ Handler error:`, error);
