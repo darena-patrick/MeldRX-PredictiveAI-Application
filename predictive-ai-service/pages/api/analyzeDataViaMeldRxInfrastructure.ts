@@ -4,6 +4,7 @@ const MAX_PROMPT_CHARS = 3000;
 const MAX_TEXT_CHARS = 3000;
 const MAX_STRING_FIELD_LENGTH = 300; // aggressive trimming
 
+// Trim long string fields in deeply nested objects
 function trimLargeFields(obj: any, maxLength = MAX_STRING_FIELD_LENGTH): any {
   if (typeof obj !== "object" || obj === null) return obj;
   const trimmed: any = Array.isArray(obj) ? [] : {};
@@ -20,10 +21,19 @@ function trimLargeFields(obj: any, maxLength = MAX_STRING_FIELD_LENGTH): any {
   return trimmed;
 }
 
-// Estimate token count very roughly (1 token ≈ 4 chars)
+// Roughly estimate token count (1 token ≈ 4 chars)
 function estimateTokenCount(input: string | object): number {
   const text = typeof input === "string" ? input : JSON.stringify(input);
   return Math.ceil(text.length / 4);
+}
+
+// Sanitize fetched text content
+function safeText(text: string, maxLength: number): string {
+  return text
+    .slice(0, maxLength)
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // remove control characters
+    .replace(/[\r\n\t]+/g, " ")                   // normalize whitespace
+    .replace(/"/g, "'");                          // escape quotes
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -62,14 +72,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const textContent = await fetchedContent.text();
         preparedInput = {
           ...item,
-          fetchedContent: textContent.length > MAX_TEXT_CHARS
-            ? textContent.slice(0, MAX_TEXT_CHARS) + "...[truncated]"
-            : textContent,
+          fetchedContent: safeText(textContent, MAX_TEXT_CHARS),
         };
       }
     }
 
     const trimmedInput = trimLargeFields(preparedInput);
+
+    // Validate and set fhirResource
+    let fhirResourcePayload: any = null;
+    if (base64Content) {
+      fhirResourcePayload = {
+        resourceType: item.resourceType,
+        id: item.id,
+        type: item.type,
+      };
+    } else {
+      if (typeof trimmedInput !== "object" || Array.isArray(trimmedInput)) {
+        throw new Error("Invalid FHIR resource: expected an object");
+      }
+      fhirResourcePayload = trimmedInput;
+    }
 
     const aiRequest = {
       model: "Llama-3.2-11B-Vision-Instruct",
@@ -79,17 +102,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       base64BinaryDataName: base64Content
         ? "attachment" + (contentType ? `.${contentType.split("/")[1]}` : "")
         : "",
-      fhirResource: base64Content
-        ? {
-            resourceType: item.resourceType,
-            id: item.id,
-            type: item.type,
-          }
-        : trimmedInput,
+      fhirResource: fhirResourcePayload,
     };
 
-    // Debugging: Estimate token count
+    // Debug estimate
     const estimatedTokens = estimateTokenCount(aiRequest);
+    console.log("📦 Prepared AI Request:", JSON.stringify(aiRequest, null, 2));
     console.log(`🧮 Estimated token count: ~${estimatedTokens} tokens`);
 
     const azureToken = process.env.AZURE_TOKEN;
