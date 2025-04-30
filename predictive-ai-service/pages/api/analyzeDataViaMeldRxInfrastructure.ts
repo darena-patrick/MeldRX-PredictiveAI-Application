@@ -39,22 +39,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    const aiRequest = {
-      model: "Llama-3.2-11B-Vision-Instruct",
-      systemMessage: "you are a healthcare practitioner",
-      chatMessage: prompt,
-      base64BinaryData: base64Content || "", // base64 only for binary
-      base64BinaryDataName: "attachment", // optional
-    };
+    // const aiRequest = {
+    //   model: "Llama-3.2-11B-Vision-Instruct",
+    //   systemMessage: "you are a healthcare practitioner",
+    //   chatMessage: prompt,
+    //   base64BinaryData: base64Content || "", // base64 only for binary
+    //   base64BinaryDataName: "attachment", // optional
+    // };
 
-    const aiResponse = await fetch("https://app.meldrx.com/api/23cd739c-3141-4d1a-81a3-697b766ccb56/ai", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(aiRequest),
-    });
+    // const aiResponse = await fetch("https://app.meldrx.com/api/23cd739c-3141-4d1a-81a3-697b766ccb56/ai", {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     'Authorization': `Bearer ${token}`,
+    //   },
+    //   body: JSON.stringify(aiRequest),
+    // });
+
+    
+  const azureToken = process.env.AZURE_TOKEN;
+
+  if (!azureToken) {
+    return res.status(400).json({ message: "Missing azure access token" });
+  }
+
+  const aiResponse = await fetch("https://meldrx-demo-ai.services.ai.azure.com/models/Llama-3.2-11B-Vision-Instruct:generate", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': azureToken,
+    },
+    body: JSON.stringify({
+      messages: [
+        { role: "system", content: "you are a healthcare practitioner" },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.5,
+      max_tokens: 1500,
+      top_p: 1.0
+    }),
+  });
+    
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
