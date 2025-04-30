@@ -63,7 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: "Missing azure access token" });
   }
 
-  const aiResponse = await fetch("https://meldrx-demo-ai.services.ai.azure.com/models/Llama-3.2-11B-Vision-Instruct:generate", {
+  const aiResponse = await fetch("https://meldrx-demo-ai.openai.azure.com/openai/deployments/Llama-3.2-11B-Vision-Instruct/chat/completions?api-version=2023-12-01-preview", {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
