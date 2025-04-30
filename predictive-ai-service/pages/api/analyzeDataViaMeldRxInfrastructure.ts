@@ -1,6 +1,25 @@
 import { NextApiRequest, NextApiResponse } from "next";
 
 const MAX_TEXT_LENGTH = 12000;
+const MAX_STRING_FIELD_LENGTH = 1000;
+
+// Trims any deep long string fields in a JSON object
+function trimLargeFields(obj: any, maxLength = MAX_STRING_FIELD_LENGTH): any {
+  if (typeof obj !== "object" || obj === null) return obj;
+
+  const trimmed: any = Array.isArray(obj) ? [] : {};
+  for (const key in obj) {
+    const val = obj[key];
+    if (typeof val === "string" && val.length > maxLength) {
+      trimmed[key] = val.slice(0, maxLength) + "...[truncated]";
+    } else if (typeof val === "object") {
+      trimmed[key] = trimLargeFields(val, maxLength);
+    } else {
+      trimmed[key] = val;
+    }
+  }
+  return trimmed;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -31,26 +50,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         throw new Error(`Failed to fetch attachment: ${fetchedContent.statusText}`);
       }
 
-      if (contentType && contentType.startsWith("image/") || contentType === "application/pdf") {
-        // Convert binary content to base64 (no data URI prefix)
+      if ((contentType && contentType.startsWith("image/")) || contentType === "application/pdf") {
         const arrayBuffer = await fetchedContent.arrayBuffer();
         base64Content = Buffer.from(arrayBuffer).toString("base64");
       } else {
-        // Assume text
         const textContent = await fetchedContent.text();
-        preparedInput = { ...item, fetchedContent: textContent };
+        preparedInput = {
+          ...item,
+          fetchedContent: textContent.length > MAX_TEXT_LENGTH
+            ? textContent.slice(0, MAX_TEXT_LENGTH) + "...[truncated]"
+            : textContent,
+        };
       }
     }
+
+    // Trim deeply nested fields to prevent token overrun
+    const trimmedInput = trimLargeFields(preparedInput);
 
     const aiRequest = {
       model: "Llama-3.2-11B-Vision-Instruct",
       systemMessage: "you are a medical model",
-      chatMessage: prompt,
+      chatMessage: prompt.slice(0, MAX_TEXT_LENGTH), // truncate prompt just in case
       base64BinaryData: base64Content || "",
-      base64BinaryDataName: "attachment" + (contentType ? `.${contentType.split("/")[1]}` : ""),
-      fhirResource: base64Content ? { resourceType: item.resourceType, id: item.id, type: item.type } : preparedInput,
+      base64BinaryDataName: base64Content
+        ? "attachment" + (contentType ? `.${contentType.split("/")[1]}` : "")
+        : "",
+      fhirResource: base64Content
+        ? {
+            resourceType: item.resourceType,
+            id: item.id,
+            type: item.type,
+          }
+        : trimmedInput,
     };
-    
 
     const azureToken = process.env.AZURE_TOKEN;
     if (!azureToken) {
