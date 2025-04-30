@@ -10,29 +10,40 @@ export const useAIQueue = () => {
   const token = useSelector((state: RootState) => state.auth.token);
 
   const retryFetch = async (
-    item: any,    
+    item: any,
     prompt: string,
     retries = 2,
-    timeout = 15000
+    timeout = 30000 // increased to 30 seconds
   ): Promise<any> => {
     for (let attempt = 0; attempt <= retries; attempt++) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       try {
-        console.log('fetching ai response...');
+        console.log("⚙️ Fetching AI response...");
         const response = await fetchAIResponse(prompt, item, token, controller.signal);
 
-        console.log('AI response fetched: ' + JSON.stringify(response));
+        console.log("✅ AI response fetched: " + JSON.stringify(response));
         clearTimeout(timeoutId);
         return response;
       } catch (err: any) {
         clearTimeout(timeoutId);
-        if (attempt === retries) {
-          console.error(`❌ Final attempt failed for prompt:`, prompt);
+
+        const isFinalAttempt = attempt === retries;
+        const errMsg = typeof err?.message === "string" ? err.message : "";
+        const shouldRetry =
+          errMsg.includes("504") ||
+          errMsg.includes("FUNCTION_INVOCATION_TIMEOUT") ||
+          errMsg.includes("ECONNRESET") ||
+          errMsg.includes("timeout") ||
+          err.name === "AbortError";
+
+        if (!shouldRetry || isFinalAttempt) {
+          console.error(`❌ Final attempt failed (attempt ${attempt + 1}):`, errMsg || err);
           throw err;
         } else {
-          console.warn(`⏳ Retry ${attempt + 1} for prompt:`, prompt);
+          console.warn(`⏳ Retrying (attempt ${attempt + 1}) after error: ${errMsg}`);
+          await new Promise((res) => setTimeout(res, 1000 * (attempt + 1))); // simple backoff
         }
       }
     }
@@ -54,7 +65,7 @@ export const useAIQueue = () => {
       prompt = `Analyze this ${type} content (Content-Type: ${contentType}):\n${content}`;
     }
 
-    return await retryFetch(item, prompt); 
+    return await retryFetch(item, prompt);
   };
 
   return { analyzeItem };
