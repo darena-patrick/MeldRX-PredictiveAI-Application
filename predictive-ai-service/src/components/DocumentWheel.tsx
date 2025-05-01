@@ -126,11 +126,15 @@ export const DocumentWheel: React.FC = () => {
         }
       );
 
-      console.log("Analysis result:", res);
+      let extracted =
+        typeof res === "string"
+          ? res
+          : res?.content ||
+            res?.result?.content ||
+            JSON.stringify(res, null, 2);
 
-      const resultText = res?.analysis || JSON.stringify(res, null, 2);
-      setAnalysisResults((prev) => ({ ...prev, [doc.id]: resultText }));
-      dispatch(addAnalysis({ documentId: doc.id, result: resultText }));
+      dispatch(addAnalysis({ documentId: doc.id, result: extracted }));
+      setAnalysisResults((prev) => ({ ...prev, [doc.id]: extracted }));
     } catch (err: any) {
       console.error("Failed to analyze document:", err);
       setErrors((prev) => ({
@@ -208,8 +212,26 @@ export const DocumentWheel: React.FC = () => {
 
                 {analysis && (
                   <>
-                    <div className="bg-base-200 p-2 rounded text-sm text-left whitespace-pre-wrap max-h-40 overflow-y-auto">
-                      {analysis}
+                    <div className="bg-base-200 p-2 rounded text-sm text-left whitespace-pre-wrap max-h-40 overflow-y-auto space-y-2">
+                      {templatedQuestions.length > 0 ? (
+                        templatedQuestions.map((question, idx) => {
+                          const answerLines = analysis
+                            .split("\n")
+                            .filter(Boolean); // simple split by line
+                          const answer =
+                            answerLines[idx] || "(No answer found)";
+                          return (
+                            <div key={idx}>
+                              <strong className="text-gray-700">
+                                Q: {question}
+                              </strong>
+                              <p className="ml-2">A: {answer}</p>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <pre>{analysis}</pre>
+                      )}
                     </div>
                     <div className="flex justify-end gap-2 mt-2">
                       <PDFDownloadLink
