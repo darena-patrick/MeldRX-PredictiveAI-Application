@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { RootState } from "@/app/redux/store";
 import { useSelector, useDispatch } from "react-redux";
@@ -58,7 +56,18 @@ export const DocumentWheel: React.FC = () => {
     }
   };
 
+  // Refactor this function to check the cache first
   const fetchAndShowDocument = async (doc: DocumentReference) => {
+    // Check if content is already cached
+    const cachedContent = docContentCache[doc.id];
+    if (cachedContent) {
+      // Use cached content if available
+      setDocContent(cachedContent.content);
+      setDocContentType(cachedContent.contentType);
+      setShowContentModal(true);
+      return;
+    }
+
     setDocLoading(true);
     try {
       const res = await fetch("/api/getDocumentContent", {
@@ -102,7 +111,7 @@ export const DocumentWheel: React.FC = () => {
           Document content:
           --------------------
           ${cached ? cached.content : JSON.stringify(doc)}
-          
+
           ${
             templatedQuestions.length > 0
               ? `

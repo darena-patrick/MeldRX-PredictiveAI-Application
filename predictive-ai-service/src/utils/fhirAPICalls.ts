@@ -63,3 +63,25 @@ export const fetchFHIRResource = async <T>({
     setLoading?.(false);
   }
 };
+
+export const fetchDocumentContent = async (doc: any) => {
+  // Here, you can implement logic to fetch document content based on `doc`
+  // For example, if the document contains a `url` field or a `content` field, you could fetch the actual content like:
+  
+  if (!doc.content || !doc.content[0]?.attachment?.url) {
+    throw new Error("No content URL found in DocumentReference");
+  }
+
+  const contentUrl = doc.content[0]?.attachment?.url;
+
+  // Example: Fetch content from the URL (this could be a file, image, text, etc.)
+  const response = await fetch(contentUrl);
+  if (!response.ok) {
+    throw new Error("Failed to fetch document content");
+  }
+
+  const contentType = response.headers.get("Content-Type") || "application/octet-stream";
+  const content = await response.text(); // You can adjust this based on the content type (e.g., binary, JSON, text)
+
+  return { content, contentType };
+};
