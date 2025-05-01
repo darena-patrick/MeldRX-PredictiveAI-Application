@@ -97,11 +97,21 @@ export const DocumentWheel: React.FC = () => {
         doc,
         (doc) => {
           const cached = docContentCache[doc.id];
-          return `Analyze the following document content:\n\n${
-            cached ? cached.content : JSON.stringify(doc)
-          }\n\n${
+          return `You are a clinical documentation analyst AI. Carefully review the provided medical document content below. Focus only on the clinical or diagnostic information, not on metadata or formatting.
+
+          Document content:
+          --------------------
+          ${cached ? cached.content : JSON.stringify(doc)}
+          
+          ${
             templatedQuestions.length > 0
-              ? `Answer these questions: ${templatedQuestions.join(", ")}`
+              ? `
+          
+          Answer the following questions based strictly on the document content above. If any question cannot be answered from the document, say "No relevant information found."
+          
+          Questions:
+          ${templatedQuestions.map((q, i) => `${i + 1}. ${q}`).join("\n")}
+          `
               : ""
           }`;
         },
