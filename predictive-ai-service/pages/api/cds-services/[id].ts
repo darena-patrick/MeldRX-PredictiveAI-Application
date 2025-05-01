@@ -24,9 +24,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       let lastAnalyzed = "";
 
+      const apiId = process.env.NEXT_PUBLIC_APP_ID;
+
+      if (!apiId) {
+        console.error("API ID is not defined in environment variables.");
+        return res.status(500).json({ message: "Internal server error" });
+      }
+
+      if (!patientId) {
+        console.error("Patient ID is not defined in the request.");
+        return res.status(400).json({ message: "Invalid patient ID" });
+      }
+
+      if (!token) {
+        console.error("Token is not defined in the request.");
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
       try {
         const response = await fetch(
-          `https://app.meldrx.com/api/fhir/${process.env.NEXT_PUBLIC_APP_ID}/Observation?subject=Patient/${patientId}&code=ai-last-analysis&_sort=-date&_count=1`,
+          `https://app.meldrx.com/api/fhir/${apiId}/Observation?subject=Patient/${patientId}&code=ai-last-analysis&_sort=-date&_count=1`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
