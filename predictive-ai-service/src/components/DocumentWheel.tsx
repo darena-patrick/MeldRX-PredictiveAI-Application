@@ -2,8 +2,7 @@
 
 import React, { useState } from "react";
 import { RootState } from "@/app/redux/store";
-import { useSelector } from "react-redux";
-import { useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { addAnalysis } from "@/app/redux/analysisSlice";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import AnalysisPDF from "./AnalysisPDF";
@@ -11,77 +10,35 @@ import { useAIQueue } from "./hooks/useAIQueue";
 
 type DocumentReference = {
   id: string;
-  type?: {
-    text?: string;
-  };
+  type?: { text?: string };
   date?: string;
   content?: Array<{
-    attachment?: {
-      data?: string;
-      contentType?: string;
-      url?: string;
-    };
+    attachment?: { data?: string; contentType?: string; url?: string };
   }>;
 };
+
 export const DocumentWheel: React.FC = () => {
   const documents = useSelector(
     (state: RootState) => state.documents.documents
   );
-  const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.token);
+  const dispatch = useDispatch();
+
   const [loadingDocId, setLoadingDocId] = useState<string | null>(null);
   const [analysisResults, setAnalysisResults] = useState<
     Record<string, string>
   >({});
-  const [error, setError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [activeDocUrl, setActiveDocUrl] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [templatedQuestions, setTemplatedQuestions] = useState<string[]>([]);
-  const [docContent, setDocContent] = useState<string | null>(null);
-  const [docContentType, setDocContentType] = useState<string | null>(null);
-  const [docLoading, setDocLoading] = useState(false);
-  const [showContentModal, setShowContentModal] = useState(false);
   const [docContentCache, setDocContentCache] = useState<
     Record<string, { content: string; contentType: string }>
   >({});
+  const [docContent, setDocContent] = useState<string | null>(null);
+  const [docContentType, setDocContentType] = useState<string | null>(null);
+  const [showContentModal, setShowContentModal] = useState(false);
+  const [docLoading, setDocLoading] = useState(false);
+
   const { analyzeItem } = useAIQueue();
-
-  const closeModal = () => {
-    setShowModal(false);
-    setActiveDocUrl(null);
-  };
-
-  const fetchAndShowDocument = async (doc: DocumentReference) => {
-    setDocLoading(true);
-    setError(null);
-    setDocContent(null);
-    setDocContentType(null);
-
-    try {
-      const res = await fetch("/api/getDocumentContent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document: doc, token }),
-      });
-
-      if (!res.ok) {
-        throw new Error(await res.text());
-      }
-
-      const { content, contentType } = await res.json();
-      setDocContent(content);
-      setDocContentType(contentType);
-      setDocContentCache((prev) => ({
-        ...prev,
-        [doc.id]: { content, contentType },
-      }));
-      setShowContentModal(true);
-    } catch (err: any) {
-      setError(`Error fetching document: ${err.message}`);
-    } finally {
-      setDocLoading(false);
-    }
-  };
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -92,10 +49,8 @@ export const DocumentWheel: React.FC = () => {
     try {
       const text = await file.text();
       const parsed = JSON.parse(text);
-
       if (!Array.isArray(parsed))
         throw new Error("Invalid format: JSON must be an array of strings");
-
       setTemplatedQuestions(parsed);
       alert("Templated questions loaded!");
     } catch (e) {
@@ -103,15 +58,40 @@ export const DocumentWheel: React.FC = () => {
     }
   };
 
+  const fetchAndShowDocument = async (doc: DocumentReference) => {
+    setDocLoading(true);
+    try {
+      const res = await fetch("/api/getDocumentContent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ document: doc, token }),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+
+      const { content, contentType } = await res.json();
+      setDocContent(content);
+      setDocContentType(contentType);
+      setDocContentCache((prev) => ({
+        ...prev,
+        [doc.id]: { content, contentType },
+      }));
+      setShowContentModal(true);
+    } catch (err: any) {
+      setErrors((prev) => ({
+        ...prev,
+        [doc.id]: `Error fetching document: ${err.message}`,
+      }));
+    } finally {
+      setDocLoading(false);
+    }
+  };
+
   const handleAnalyze = async (doc: DocumentReference) => {
     setLoadingDocId(doc.id);
-    setError(null);
+    setErrors((prev) => ({ ...prev, [doc.id]: null }));
 
     try {
-      console.log("doc", doc);
-      console.log("doc string", JSON.stringify(doc));
-      console.log("token", token);
-
       const res = await analyzeItem(
         "DocumentReference",
         doc,
@@ -127,20 +107,15 @@ export const DocumentWheel: React.FC = () => {
         },
         async (doc) => {
           const cached = docContentCache[doc.id];
-          if (cached) {
-            console.log("Using cached document content for analysis");
-            return cached;
-          }
-          console.log("Fetching document content from server...");
+          if (cached) return cached;
+
           const fetchRes = await fetch("/api/getDocumentContent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ document: doc, token }),
           });
 
-          if (!fetchRes.ok) {
-            throw new Error(await fetchRes.text());
-          }
+          if (!fetchRes.ok) throw new Error(await fetchRes.text());
 
           const { content, contentType } = await fetchRes.json();
           setDocContentCache((prev) => ({
@@ -152,11 +127,16 @@ export const DocumentWheel: React.FC = () => {
       );
 
       console.log("Analysis result:", res);
-      dispatch(addAnalysis({ documentId: doc.id, result: res }));
-      setAnalysisResults((prev) => ({ ...prev, [doc.id]: res.analysis }));
+
+      const resultText = res?.analysis || JSON.stringify(res, null, 2);
+      setAnalysisResults((prev) => ({ ...prev, [doc.id]: resultText }));
+      dispatch(addAnalysis({ documentId: doc.id, result: resultText }));
     } catch (err: any) {
       console.error("Failed to analyze document:", err);
-      setError(`Failed: ${err.message}`);
+      setErrors((prev) => ({
+        ...prev,
+        [doc.id]: `Analysis failed: ${err.message}`,
+      }));
     } finally {
       setLoadingDocId(null);
     }
@@ -185,18 +165,11 @@ export const DocumentWheel: React.FC = () => {
         )}
       </div>
 
-      {error && (
-        <div className="alert alert-error mb-4">
-          <span>{error}</span>
-        </div>
-      )}
-
       <div className="flex space-x-4">
         {documents.map((doc) => {
           const attachment = doc.content?.[0]?.attachment;
-          const isImage =
-            attachment?.contentType?.startsWith("image/") && attachment.url;
           const analysis = analysisResults[doc.id];
+          const error = errors[doc.id];
 
           return (
             <div
@@ -204,13 +177,6 @@ export const DocumentWheel: React.FC = () => {
               className="card w-80 bg-base-100 shadow-xl shrink-0"
             >
               <div className="card-body space-y-2">
-                {/* {isImage && attachment && (
-                  <img
-                    src={attachment.url}
-                    alt="Medical image"
-                    className="w-full h-40 object-cover rounded-lg"
-                  />
-                )} */}
                 <h2 className="card-title">
                   {doc.type?.text || attachment?.contentType || "Unknown Type"}
                 </h2>
@@ -256,38 +222,24 @@ export const DocumentWheel: React.FC = () => {
                     </div>
                   </>
                 )}
+
+                {error && (
+                  <div className="alert alert-error text-sm whitespace-pre-wrap">
+                    {error}
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      {showModal && activeDocUrl && (
-        <dialog className="modal modal-open">
-          <div className="modal-box max-w-4xl">
-            <h3 className="font-bold text-lg mb-2">Original Document</h3>
-            <div className="max-h-[70vh] overflow-y-auto">
-              <iframe
-                src={activeDocUrl}
-                className="w-full h-[60vh] border rounded"
-                title="Document Preview"
-              />
-            </div>
-            <div className="modal-action">
-              <button className="btn" onClick={closeModal}>
-                Close
-              </button>
-            </div>
-          </div>
-        </dialog>
-      )}
-
+      {/* Content modal */}
       {showContentModal && docContent && (
         <dialog className="modal modal-open">
           <div className="modal-box max-w-4xl">
             <h3 className="font-bold text-lg mb-2">Document Content</h3>
             <div className="max-h-[70vh] overflow-y-auto">
-              {/* If it's an image, render the image */}
               {docContent.startsWith("data:image/") ? (
                 <img
                   src={docContent}
@@ -295,39 +247,30 @@ export const DocumentWheel: React.FC = () => {
                   className="w-full rounded"
                 />
               ) : docContentType?.includes("xml") ? (
-                // If it's XML, decode and parse it
-                <div className="text-sm whitespace-pre-wrap bg-base-200 p-2 rounded">
-                  {(() => {
-                    try {
-                      // If it was base64-encoded XML, decode it
-                      const base64Match = docContent.match(
-                        /^data:.*;base64,(.*)$/
-                      );
-                      const decoded = base64Match
-                        ? atob(base64Match[1])
-                        : docContent;
-
-                      const parser = new DOMParser();
-                      const xml = parser.parseFromString(
-                        decoded,
-                        "application/xml"
-                      );
-
-                      const paragraph = xml.querySelector("paragraph");
-                      if (paragraph) {
-                        return <p>{paragraph.textContent}</p>;
-                      }
-
-                      // Fallback to show raw decoded XML nicely
-                      return <pre>{decoded}</pre>;
-                    } catch (e) {
-                      // Fallback if XML parsing fails
-                      return <pre>{docContent}</pre>;
-                    }
-                  })()}
-                </div>
+                (() => {
+                  try {
+                    const base64Match = docContent.match(
+                      /^data:.*;base64,(.*)$/
+                    );
+                    const decoded = base64Match
+                      ? atob(base64Match[1])
+                      : docContent;
+                    const parser = new DOMParser();
+                    const xml = parser.parseFromString(
+                      decoded,
+                      "application/xml"
+                    );
+                    const paragraph = xml.querySelector("paragraph");
+                    return paragraph ? (
+                      <p>{paragraph.textContent}</p>
+                    ) : (
+                      <pre>{decoded}</pre>
+                    );
+                  } catch (e) {
+                    return <pre>{docContent}</pre>;
+                  }
+                })()
               ) : (
-                // Fallback for any other text
                 <pre className="text-sm whitespace-pre-wrap bg-base-200 p-2 rounded">
                   {docContent}
                 </pre>
