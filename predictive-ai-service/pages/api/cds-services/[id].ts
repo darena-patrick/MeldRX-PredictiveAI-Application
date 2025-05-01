@@ -11,6 +11,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (id === "0001") {
     try {
+      console.log("Received CDS Hooks call:", {
+        method: req.method,
+        headers: req.headers,
+        hasFhirAuth: !!req.body.fhirAuthorization,
+      });
+
+      
       const { prefetch } = req.body;
       if (!prefetch || !prefetch.patient) {
         return res.status(400).json({ message: "Invalid request data" });
@@ -37,9 +44,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       if (!token) {
-        console.error("Token is not defined in the request.");
-        return res.status(401).json({ message: "Unauthorized" });
+        console.warn("Missing token: expected fhirAuthorization.access_token in CDS Hooks request.");
+        return res.status(401).json({ message: "Unauthorized: missing access token" });
       }
+      
 
       try {
         const response = await fetch(
