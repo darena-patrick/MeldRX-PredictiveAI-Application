@@ -6,6 +6,7 @@ import { Card, CardContent } from "./ui/CardContent";
 import { Spinner } from "./ui/Spinner";
 import { useAllPatientData } from "./hooks/useAllPatientData";
 import { useAIQueue } from "./hooks/useAIQueue";
+import { fetchDocumentContent } from "@/utils/fhirAPICalls";
 
 const PAGE_SIZE = 5;
 
@@ -88,22 +89,29 @@ export default function Dashboard() {
 
     const tasks: Promise<void>[] = [];
 
-    // const analyze = (
-    //   type: string,
-    //   items: any[],
-    //   promptFn?: (item: any) => string
-    // ) => {
-    //   setPages((p) => ({ ...p, [type]: 1 }));
-    //   setExpanded((e) => ({ ...e, [type]: true }));
-    //   tasks.push(analyzeResource(type, items, promptFn));
-    // };
+    // Analyze each resource type, including DocumentReference with custom handling
+    const analyze = (
+      type: string,
+      items: any[],
+      promptFn?: (item: any) => string,
+      fetchFn?: (item: any) => Promise<any>
+    ) => {
+      setPages((p) => ({ ...p, [type]: 1 }));
+      setExpanded((e) => ({ ...e, [type]: true }));
+      tasks.push(analyzeResource(type, items, promptFn, fetchFn));
+    };
 
     // analyze("Condition", Condition);
     // analyze("Observation", Observation);
     // analyze(
     //   "DocumentReference",
     //   DocumentReference,
-    //   (doc) => `Analyze this document: ${doc.type?.text || "Unknown Document"}`
+    //   (doc) => `Analyze this document: ${doc.type?.text || "Unknown Document"}`,
+    //   async (doc) => {
+    //     // Fetch document content if it's a DocumentReference
+    //     const { content, contentType } = await fetchDocumentContent(doc);
+    //     return { content, contentType };
+    //   }
     // );
     // analyze("AllergyIntolerance", AllergyIntolerance);
     // analyze("CarePlan", CarePlan);
