@@ -126,7 +126,7 @@ export const DocumentWheel: React.FC = () => {
         }
       );
 
-      let extracted =
+      const extracted =
         typeof res === "string"
           ? res
           : res?.content ||
