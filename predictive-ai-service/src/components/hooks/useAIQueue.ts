@@ -6,37 +6,10 @@ import { useSelector } from "react-redux";
 
 type FetchFn = (item: any) => Promise<{ content: string; contentType: string }>;
 
-// Helper function to fetch document content from URL
-const fetchDocumentContent = async (item: any): Promise<{ content: string; contentType: string }> => {
-  const attachment = item.content?.[0]?.attachment;
-  const attachmentUrl = attachment?.url;
-  const contentType = attachment?.contentType || "application/octet-stream";
-
-  if (!attachmentUrl) {
-    throw new Error("DocumentReference does not contain a valid URL.");
-  }
-
-  // Fetch the document content
-  const response = await fetch(attachmentUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch document content: ${response.statusText}`);
-  }
-
-  let content = "";
-  if (contentType.startsWith("image/") || contentType === "application/pdf") {
-    const arrayBuffer = await response.arrayBuffer();
-    content = Buffer.from(arrayBuffer).toString("base64"); // Convert to base64
-  } else {
-    content = await response.text(); // For textual content
-  }
-
-  return { content, contentType };
-};
-
 export const useAIQueue = () => {
   const token = useSelector((state: RootState) => state.auth.token);
 
-  // Retry mechanism for fetch operations
+
   const retryFetch = async (
     item: any,
     prompt: string,
@@ -77,7 +50,7 @@ export const useAIQueue = () => {
     }
   };
 
-  // Analyze a specific item
+
   const analyzeItem = async (
     type: string,
     item: any,
@@ -88,12 +61,9 @@ export const useAIQueue = () => {
       ? customPrompt(item)
       : `Analyze the following ${type}:\n${JSON.stringify(item, null, 2)}`;
 
-    // If the item is a DocumentReference, handle content fetching before analysis
-    if (type === "DocumentReference") {
-      const { content, contentType } = await fetchDocumentContent(item);
-      prompt = `Analyze this ${type} content (Content-Type: ${contentType}):\n${content}`;
-    } else if (fetchFn) {
-      // If fetchFn is provided (for custom types like documents), call it first
+    // If fetchFn is provided (e.g., for documents), call it first
+    if (fetchFn) {
+
       const { content, contentType } = await fetchFn(item);
       prompt = `Analyze this ${type} content (Content-Type: ${contentType}):\n${content}`;
     }
