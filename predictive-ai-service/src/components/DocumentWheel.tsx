@@ -46,11 +46,6 @@ export const DocumentWheel: React.FC = () => {
   >({});
   const { analyzeItem } = useAIQueue();
 
-  // const openModal = (url: string) => {
-  //   setActiveDocUrl(url);
-  //   setShowModal(true);
-  // };
-
   const closeModal = () => {
     setShowModal(false);
     setActiveDocUrl(null);
@@ -63,19 +58,10 @@ export const DocumentWheel: React.FC = () => {
     setDocContentType(null);
 
     try {
-      const attachment = doc.content?.[0]?.attachment;
-      const isBase64Data = attachment?.data;
-      const url = attachment?.url;
-
       const res = await fetch("/api/getDocumentContent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...(isBase64Data
-            ? { data: isBase64Data, contentType: attachment?.contentType }
-            : { url }),
-          token,
-        }),
+        body: JSON.stringify({ document: doc, token }),
       });
 
       if (!res.ok) {
