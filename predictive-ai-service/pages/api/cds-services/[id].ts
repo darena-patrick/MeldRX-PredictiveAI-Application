@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 
 export const patientAnalysisDates: { [patientId: string]: string } = {};
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method Not Allowed" });
   }
@@ -20,10 +20,28 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       const patientId = patient.id;
       const name = `${patient.name?.[0]?.given?.[0] || "Unknown"} ${patient.name?.[0]?.family || ""}`.trim();
 
-      const lastAnalyzed = patientAnalysisDates[patientId];
-      const analysisStatus = lastAnalyzed
-        ? `Last analyzed on ${lastAnalyzed}`
-        : "Patient not yet analyzed";
+      const token = req.headers.authorization?.replace("Bearer ", "") ?? req.body.fhirAuthorization?.access_token;
+
+      let lastAnalyzed = "";
+
+      try {
+        const response = await fetch(
+          `https://app.meldrx.com/api/fhir/${process.env.NEXT_PUBLIC_APP_ID}/Observation?subject=Patient/${patientId}&code=ai-last-analysis&_sort=-date&_count=1`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/fhir+json",
+            },
+          }
+        );
+        const data = await response.json();
+        lastAnalyzed = data.entry?.[0]?.resource?.valueDateTime || "";
+      } catch (err) {
+        console.error("Failed to fetch last analyzed date from FHIR:", err);
+      }
+
+
+      const analysisStatus = lastAnalyzed ? `Last analyzed on ${lastAnalyzed}` : "Patient not yet analyzed";
 
       return res.json({
         cards: [

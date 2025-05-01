@@ -5,19 +5,26 @@ import { useSelector } from "react-redux";
 
 export const SimulateLastAnalyzed = () => {
   const patientId = useSelector((state: RootState) => state.auth.patientId);
+  const token = useSelector((state: RootState) => state.auth.token);
+
   const [status, setStatus] = useState("Patient not yet analyzed");
 
   const handleAnalyze = async () => {
-    if (!patientId) return;
+    if (!patientId || !token) return;
 
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     try {
-      await fetch(
-        `/api/updateLastAnalyzed?patientId=${patientId}&date=${today}`,
-        {
-          method: "POST",
-        }
-      );
+      await fetch("/api/updateLastAnalyzed", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          patientId,
+          date: today,
+          token,
+        }),
+      });
       setStatus(`Last analyzed on ${today}`);
     } catch (err) {
       console.error("Failed to analyze patient:", err);
