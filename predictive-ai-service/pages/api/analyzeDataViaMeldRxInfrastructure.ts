@@ -96,7 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const aiRequest = {
       model: "Llama-3.2-11B-Vision-Instruct",
-      systemMessage: "you are a medical model",
+      systemMessage: "You analyze patient's medical data and provide insights.",
       chatMessage: prompt.slice(0, MAX_PROMPT_CHARS),
       base64BinaryData: base64Content || "",
       base64BinaryDataName: base64Content
