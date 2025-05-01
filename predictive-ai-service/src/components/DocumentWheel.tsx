@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import { RootState } from "@/app/redux/store";
 import { useSelector, useDispatch } from "react-redux";
@@ -5,7 +7,6 @@ import { addAnalysis } from "@/app/redux/analysisSlice";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import AnalysisPDF from "./AnalysisPDF";
 import { useAIQueue } from "./hooks/useAIQueue";
-import { fetchDocumentContent } from "@/utils/fhirAPICalls";
 
 type DocumentReference = {
   id: string;
@@ -58,41 +59,30 @@ export const DocumentWheel: React.FC = () => {
   };
 
   const fetchAndShowDocument = async (doc: DocumentReference) => {
-    // Check if content is already cached
-    const cachedContent = docContentCache[doc.id];
-    if (cachedContent) {
-      // Use cached content if available
-      setDocContent(cachedContent.content);
-      setDocContentType(cachedContent.contentType);
-      setShowContentModal(true);
-      return;
-    }
-
     setDocLoading(true);
     try {
-      // Call the fetchDocumentContent function and pass cache management as arguments
-      const { content, contentType } = await fetchDocumentContent(doc, token);
+      const res = await fetch("/api/getDocumentContent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ document: doc, token }),
+      });
 
-      // Update the state with the fetched content
+      if (!res.ok) throw new Error(await res.text());
+
+      const { content, contentType } = await res.json();
       setDocContent(content);
       setDocContentType(contentType);
-
-      // Cache the fetched content
       setDocContentCache((prev) => ({
         ...prev,
         [doc.id]: { content, contentType },
       }));
-
-      // Show the content in a modal
       setShowContentModal(true);
     } catch (err: any) {
-      // Handle error if fetch fails
       setErrors((prev) => ({
         ...prev,
         [doc.id]: `Error fetching document: ${err.message}`,
       }));
     } finally {
-      // Hide the loading indicator
       setDocLoading(false);
     }
   };
