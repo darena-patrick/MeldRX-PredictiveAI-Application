@@ -14,17 +14,16 @@ export const SimulateLastAnalyzed = () => {
 
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     try {
-      await fetch("/api/updateLastAnalyzed", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          patientId,
-          date: today,
-          token,
-        }),
-      });
+      await fetch(
+        `/api/updateLastAnalyzed?patientId=${patientId}&date=${today}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       setStatus(`Last analyzed on ${today}`);
     } catch (err) {
       console.error("Failed to analyze patient:", err);
