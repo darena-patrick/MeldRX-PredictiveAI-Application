@@ -34,11 +34,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
           }
         );
-        const data = await response.json();
-        lastAnalyzed = data.entry?.[0]?.resource?.valueDateTime || "";
+      
+        if (!response.ok) {
+          console.warn("FHIR fetch failed with status:", response.status);
+        } else {
+          const text = await response.text();
+      
+          if (text.trim()) {
+            const data = JSON.parse(text);
+            lastAnalyzed = data.entry?.[0]?.resource?.valueDateTime || "";
+          } else {
+            console.info(`No previous analysis found for patient ${patientId}`);
+          }
+        }
       } catch (err) {
-        console.error("Failed to fetch last analyzed date from FHIR:", err);
+        console.error("Unexpected error fetching last analyzed date from FHIR:", err);
       }
+      
 
 
       const analysisStatus = lastAnalyzed ? `Last analyzed on ${lastAnalyzed}` : "Patient not yet analyzed";
