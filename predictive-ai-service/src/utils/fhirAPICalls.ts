@@ -63,3 +63,23 @@ export const fetchFHIRResource = async <T>({
     setLoading?.(false);
   }
 };
+
+// In your utility file (e.g., `utils/fetchDocumentContent.ts`)
+export const fetchDocumentContent = async (doc: any, token: string) => {
+  if (!doc.content || !doc.content[0]?.attachment?.url) {
+    throw new Error("No content URL found in DocumentReference");
+  }
+
+  const contentUrl = doc.content[0]?.attachment?.url;
+
+  // Fetch content from the URL
+  const response = await fetch(contentUrl);
+  if (!response.ok) {
+    throw new Error("Failed to fetch document content");
+  }
+
+  const contentType = response.headers.get("Content-Type") || "application/octet-stream";
+  const content = await response.text(); // Adjust based on content type
+
+  return { content, contentType };
+};
