@@ -20,6 +20,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     //   return res.status(401).json({ message: "Unauthorized: missing access token or FHIR server URL" });
     // }
 
+     if (!fhirServer) {
+      return res.status(401).json({ message: "Unauthorized: fhirServer" });
+    }
+
     const patient = prefetch?.patientToGreet;
     if (!patient || !patient.id) {
       return res.status(400).json({ message: "Invalid request: missing patient data in prefetch" });
@@ -29,30 +33,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const name = `${patient.name?.[0]?.given?.[0] || "Unknown"} ${patient.name?.[0]?.family || ""}`.trim();
 
     // const token = fhirAuthorization.access_token;
-    // const fhirBaseUrl = fhirServer;
+    const fhirBaseUrl = fhirServer;
 
     let lastAnalyzed = "";
 
-    // try {
-    //   const response = await fetch(
-    //     `${fhirBaseUrl}/Observation?subject=Patient/${patientId}&code=ai-last-analysis&_sort=-date&_count=1`,
-    //     {
-    //       headers: {
-    //         Authorization: `Bearer ${token}`,
-    //         Accept: "application/fhir+json",
-    //       },
-    //     }
-    //   );
+    try {
+      const response = await fetch(
+        `${fhirBaseUrl}/Observation?subject=Patient/${patientId}&code=ai-last-analysis&_sort=-date&_count=1`,
+        {
+          headers: {
+            // Authorization: `Bearer ${token}`,
+            Accept: "application/fhir+json",
+          },
+        }
+      );
 
-    //   if (!response.ok) {
-    //     console.warn("FHIR fetch failed with status:", response.status);
-    //   } else {
-    //     const json = await response.json();
-    //     lastAnalyzed = json.entry?.[0]?.resource?.valueDateTime || "";
-    //   }
-    // } catch (err) {
-    //   console.error("Error fetching Observation from FHIR server:", err);
-    // }
+      if (!response.ok) {
+        console.warn("FHIR fetch failed with status:", response.status);
+      } else {
+        const json = await response.json();
+        lastAnalyzed = json.entry?.[0]?.resource?.valueDateTime || "";
+      }
+    } catch (err) {
+      console.error("Error fetching Observation from FHIR server:", err);
+    }
 
     const analysisStatus = lastAnalyzed
       ? `Last analyzed on ${lastAnalyzed}`
