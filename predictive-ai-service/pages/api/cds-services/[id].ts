@@ -6,34 +6,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const { prefetch } = req.body;
-    console.log("prefetch:", JSON.stringify(prefetch, null, 2));
     const patient = prefetch?.patient;
-    const observationBundle = prefetch?.lastAnalysis;
+    const observations = prefetch?.observations;
 
-    if (!patient || !patient.id) {
-      return res.status(400).json({ message: "Invalid request: patient not provided in prefetch" });
-    }
-
-    const name = `${patient.name?.[0]?.given?.[0] || "Unknown"} ${patient.name?.[0]?.family || ""}`.trim();
+    const patientName = `${patient?.name?.[0]?.given?.[0] || ""} ${patient?.name?.[0]?.family || ""}`.trim();
 
     let lastAnalyzed = "";
-    if (observationBundle?.entry?.length) {
-      const obs = observationBundle.entry[0].resource;
-      if (obs?.resourceType === "Observation" && obs?.valueDateTime) {
-        lastAnalyzed = obs.valueDateTime;
+
+    if (observations?.entry?.length) {
+      const aiAnalysisObservations = observations.entry
+        .map((e: any) => e.resource)
+        .filter((r: any) =>
+          r.resourceType === "Observation" &&
+          r.code?.coding?.some((c: any) => c.code === "ai-last-analysis")
+        );
+
+      // Sort by valueDateTime (or effectiveDateTime) descending
+      aiAnalysisObservations.sort((a: any, b: any) =>
+        new Date(b.valueDateTime || b.effectiveDateTime).getTime() -
+        new Date(a.valueDateTime || a.effectiveDateTime).getTime()
+      );
+
+      const mostRecent = aiAnalysisObservations[0];
+      if (mostRecent?.valueDateTime) {
+        lastAnalyzed = mostRecent.valueDateTime;
       }
     }
 
-    const analysisStatus = lastAnalyzed
-      ? `Last analyzed on ${lastAnalyzed}`
-      : "Patient not yet analyzed";
+    const summary = lastAnalyzed
+      ? `AI insights available for ${patientName} - Last analyzed ${lastAnalyzed}`
+      : `AI insights unavailable for ${patientName} - Launch app to get started`;
 
     return res.json({
       cards: [
         {
-          summary: `AI Insights for ${name} - ${analysisStatus}`,
+          summary,
           indicator: lastAnalyzed ? "info" : "warning",
-          source: { label: "AI Health Insights" },
+          source: { label: "AI Predictive Service" },
           links: [
             {
               label: "Get AI Insights",
@@ -44,8 +53,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
       ],
     });
-  } catch (err: any) {
-    console.error("CDS hook processing error:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
+  } catch (error: any) {
+    console.error("CDS Hook Error:", error);
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 }
