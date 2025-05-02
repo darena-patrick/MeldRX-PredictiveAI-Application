@@ -24,7 +24,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ message: "Unauthorized: fhirServer" });
     }
 
-    const patient = prefetch?.patientToGreet;
+    const patient = prefetch?.patient;
+    return res.status(400).json({ message: `prefetch: ${JSON.stringify(patient)}` });
     if (!patient || !patient.id) {
       return res.status(400).json({ message: "Invalid request: missing patient data in prefetch" });
     }
