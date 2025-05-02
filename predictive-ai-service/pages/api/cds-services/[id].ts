@@ -1,7 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
 
-export const patientAnalysisDates: { [patientId: string]: string } = {};
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method Not Allowed" });
@@ -14,47 +12,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { prefetch, fhirAuthorization } = req.body;
+    const { prefetch, fhirServer, fhirAuthorization } = req.body;
 
-    // Log request headers and body auth for debugging
-    console.log("Authorization header:", req.headers.authorization);
-    console.log("fhirAuthorization:", JSON.stringify(fhirAuthorization, null, 2));
-
-    if (!prefetch || !prefetch.patient) {
-      return res.status(400).json({ message: "Invalid request data: missing patient" });
+    if (!fhirServer || !fhirAuthorization?.access_token) {
+      return res.status(401).json({ message: "Unauthorized: missing access token or FHIR server URL" });
     }
 
-    const patient = prefetch.patient;
+    const patient = prefetch?.patientToGreet;
+    if (!patient || !patient.id) {
+      return res.status(400).json({ message: "Invalid request: missing patient data in prefetch" });
+    }
+
     const patientId = patient.id;
     const name = `${patient.name?.[0]?.given?.[0] || "Unknown"} ${patient.name?.[0]?.family || ""}`.trim();
 
-    const apiId = process.env.NEXT_PUBLIC_APP_ID;
-    if (!apiId) {
-      console.error("API ID is not defined in environment variables.");
-      return res.status(500).json({ message: "Internal server error" });
-    }
-
-    if (!patientId) {
-      console.error("Patient ID is not defined in the request.");
-      return res.status(400).json({ message: "Invalid patient ID" });
-    }
-
-    // Get access token from Authorization header, fhirAuthorization block, or fallback env (for dev)
-    let token =
-      req.headers.authorization?.replace("Bearer ", "") ??
-      fhirAuthorization?.access_token ??
-      process.env.TEST_TOKEN;
-
-    if (!token) {
-      console.warn("Missing token: expected fhirAuthorization.access_token or Authorization header.");
-      return res.status(401).json({ message: "Unauthorized: missing access token" });
-    }
+    const token = fhirAuthorization.access_token;
+    const fhirBaseUrl = fhirServer;
 
     let lastAnalyzed = "";
 
     try {
       const response = await fetch(
-        `https://app.meldrx.com/api/fhir/${apiId}/Observation?subject=Patient/${patientId}&code=ai-last-analysis&_sort=-date&_count=1`,
+        `${fhirBaseUrl}/Observation?subject=Patient/${patientId}&code=ai-last-analysis&_sort=-date&_count=1`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -66,29 +45,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!response.ok) {
         console.warn("FHIR fetch failed with status:", response.status);
       } else {
-        const text = await response.text();
-
-        if (text.trim()) {
-          const data = JSON.parse(text);
-          lastAnalyzed = data.entry?.[0]?.resource?.valueDateTime || "";
-        } else {
-          console.info(`No previous analysis found for patient ${patientId}`);
-        }
+        const json = await response.json();
+        lastAnalyzed = json.entry?.[0]?.resource?.valueDateTime || "";
       }
     } catch (err) {
-      console.error("Unexpected error fetching last analyzed date from FHIR:", err);
+      console.error("Error fetching Observation from FHIR server:", err);
     }
 
-    const analysisStatus = lastAnalyzed ? `Last analyzed on ${lastAnalyzed}` : "Patient not yet analyzed";
+    const analysisStatus = lastAnalyzed
+      ? `Last analyzed on ${lastAnalyzed}`
+      : "Patient not yet analyzed";
 
     return res.json({
       cards: [
         {
           summary: `AI Insights for ${name} - ${analysisStatus}`,
           indicator: lastAnalyzed ? "info" : "warning",
-          source: {
-            label: "AI Health Insights",
-          },
+          source: { label: "AI Health Insights" },
           links: [
             {
               label: "Get AI Insights",
@@ -100,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ],
     });
   } catch (error: any) {
-    console.error("Error processing request:", error);
+    console.error("Unhandled server error:", error);
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 }
