@@ -6,6 +6,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const { prefetch } = req.body;
+    console.log("prefetch:", JSON.stringify(prefetch?.patient, null, 2));
     const patient = prefetch?.patient;
     const observationBundle = prefetch?.lastAnalysis;
 
