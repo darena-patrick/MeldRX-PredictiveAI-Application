@@ -1,62 +1,26 @@
 import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method Not Allowed" });
-  }
-
-  const { id } = req.query;
-
-  if (id !== "0001") {
-    return res.status(404).json({ message: "Service not found" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ message: "Method Not Allowed" });
+  if (req.query.id !== "0001") return res.status(404).json({ message: "Service not found" });
 
   try {
-    const { prefetch, fhirServer, fhirAuthorization } = req.body;
-    console.log('fhirServer', fhirServer);
-    console.log('fhirAuthorization', fhirAuthorization);
-
-    // if (!fhirServer || !fhirAuthorization?.access_token) {
-    //   return res.status(401).json({ message: "Unauthorized: missing access token or FHIR server URL" });
-    // }
-
-     if (!fhirServer) {
-      return res.status(401).json({ message: "Unauthorized: fhirServer" });
-    }
-
+    const { prefetch } = req.body;
     const patient = prefetch?.patient;
-    return res.status(400).json({ message: `prefetch: ${JSON.stringify(patient)}` });
+    const observationBundle = prefetch?.lastAnalysis;
+
     if (!patient || !patient.id) {
-      return res.status(400).json({ message: "Invalid request: missing patient data in prefetch" });
+      return res.status(400).json({ message: "Invalid request: patient not provided in prefetch" });
     }
 
-    const patientId = patient.id;
     const name = `${patient.name?.[0]?.given?.[0] || "Unknown"} ${patient.name?.[0]?.family || ""}`.trim();
 
-    // const token = fhirAuthorization.access_token;
-    const fhirBaseUrl = fhirServer;
-
     let lastAnalyzed = "";
-
-    try {
-      const response = await fetch(
-        `${fhirBaseUrl}/Observation?subject=Patient/${patientId}&code=ai-last-analysis&_sort=-date&_count=1`,
-        {
-          headers: {
-            // Authorization: `Bearer ${token}`,
-            Accept: "application/fhir+json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        console.warn("FHIR fetch failed with status:", response.status);
-      } else {
-        const json = await response.json();
-        lastAnalyzed = json.entry?.[0]?.resource?.valueDateTime || "";
+    if (observationBundle?.entry?.length) {
+      const obs = observationBundle.entry[0].resource;
+      if (obs?.resourceType === "Observation" && obs?.valueDateTime) {
+        lastAnalyzed = obs.valueDateTime;
       }
-    } catch (err) {
-      console.error("Error fetching Observation from FHIR server:", err);
     }
 
     const analysisStatus = lastAnalyzed
@@ -79,8 +43,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
       ],
     });
-  } catch (error: any) {
-    console.error("Unhandled server error:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
+  } catch (err: any) {
+    console.error("CDS hook processing error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
   }
 }
