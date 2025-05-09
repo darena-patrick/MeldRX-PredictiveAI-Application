@@ -126,26 +126,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
       body: JSON.stringify(aiRequest),
     });
+   
+    // IF USING GITHUB TOKEN
+    // const responseText = await aiResponse.text();
+
+    // if (!aiResponse.ok) {
+    //   console.error(`❌ AI Error Response: ${responseText}`);
+    //   throw new Error(`AI request failed: ${aiResponse.status} ${aiResponse.statusText} - ${responseText}`);
+    // }
     
-    const responseText = await aiResponse.text();
+    // let result;
+    // try {
+    //   result = JSON.parse(responseText);
+    // } catch (err) {
+    //   // If parsing fails, assume it's plain text and wrap it manually
+    //   console.warn("⚠️ AI response was not valid JSON, using raw text.");
+    //   result = { content: responseText };
+    // }
+    // res.status(200).json({ result });    
+
+    // FOR AZURE
+    const json = await aiResponse.json();
 
     if (!aiResponse.ok) {
-      console.error(`❌ AI Error Response: ${responseText}`);
-      throw new Error(`AI request failed: ${aiResponse.status} ${aiResponse.statusText} - ${responseText}`);
+      console.error(`❌ AI Error Response:`, json);
+      throw new Error(`AI request failed: ${aiResponse.status} ${aiResponse.statusText} - ${JSON.stringify(json)}`);
     }
-    
-    let result;
-    try {
-      result = JSON.parse(responseText);
-    } catch (err) {
-      // If parsing fails, assume it's plain text and wrap it manually
-      console.warn("⚠️ AI response was not valid JSON, using raw text.");
-      result = { content: responseText };
-    }
-    
-    res.status(200).json({ result });
-    
-    
+
+    res.status(200).json({ result: json });
+    // 
 
   } catch (error: any) {
     console.error(`❌ Handler error:`, error);
