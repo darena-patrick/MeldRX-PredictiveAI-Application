@@ -1,5 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 
+// main endpoint to make API calls through MeldRx infrastructure
+
 const MAX_PROMPT_CHARS = 3000;
 const MAX_TEXT_CHARS = 3000;
 const MAX_STRING_FIELD_LENGTH = 300; // aggressive trimming
